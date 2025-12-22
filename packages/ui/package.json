@@ -8,15 +8,15 @@
     "dist"
   ],
   "exports": {
-    "./styles.css": "./dist/index.css",
+    "./globals.css": "./dist/globals.css",
     "./*": "./dist/*.js"
   },
   "license": "MIT",
   "scripts": {
-    "build:styles": "tailwindcss -i ./src/styles.css -o ./dist/index.css",
+    "build:styles": "tailwindcss -i ./src/globals.css -o ./dist/globals.css",
     "build:components": "tsc",
     "check-types": "tsc --noEmit",
-    "dev:styles": "tailwindcss -i ./src/styles.css -o ./dist/index.css --watch",
+    "dev:styles": "tailwindcss -i ./src/globals.css -o ./dist/globals.css --watch",
     "dev:components": "tsc --watch",
     "lint": "eslint src --max-warnings 0"
   },
