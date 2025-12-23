@@ -1,9 +1,9 @@
 import '@repo/ui/globals.css';
 import './globals.css';
 import type { Metadata } from 'next';
-import { Geist } from 'next/font/google';
+import { Nunito } from 'next/font/google';
 
-const geist = Geist({ subsets: ['latin'] });
+const nunito = Nunito({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Create Turborepo',
@@ -17,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang='en' data-theme='sako-dark'>
-      <body className={geist.className}>{children}</body>
+      <body className={nunito.className}>{children}</body>
     </html>
   );
 }
