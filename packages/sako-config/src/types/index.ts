@@ -6,3 +6,9 @@ export type {
   ProviderType,
   ProviderStorage,
 } from './provider';
+
+export type {
+  SamplerSettings,
+  KoboldCppSamplers,
+  ClaudeSamplers,
+} from './samplers';
