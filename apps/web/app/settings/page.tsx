@@ -2,40 +2,66 @@
 
 import { useState, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
-import {
-  getProvidersConfig,
-  getActiveProvider,
-  setActiveProvider,
-  updateProviderConfig,
-  type ProviderType,
-  type ProvidersConfig,
-} from '@repo/sako-config';
+
+import * as SakoConfig from '@repo/sako-config';
 
 export default function Page() {
-  const [providers, setProviders] = useState<ProvidersConfig | null>(null);
+  const [providers, setProviders] = useState<SakoConfig.ProvidersConfig | null>(
+    null
+  );
   const [activeProvider, setActiveProviderState] =
-    useState<ProviderType | null>(null);
+    useState<SakoConfig.ProviderType | null>(null);
+
+  const [contextTemplates, setContextTemplates] = useState<
+    Record<string, SakoConfig.ContextTemplate>
+  >({});
+  const [instructTemplates, setInstructTemplates] = useState<
+    Record<string, SakoConfig.InstructTemplate>
+  >({});
+  const [systemTemplates, setSystemTemplates] = useState<
+    Record<string, SakoConfig.SystemPrompt>
+  >({});
+  const [samplerTemplates, setSamplerTemplates] = useState<
+    Record<string, SakoConfig.SamplerSettings>
+  >({});
+
+  const [activeContext, setActiveContextState] = useState<string | null>(null);
+  const [activeInstruct, setActiveInstructState] = useState<string | null>(
+    null
+  );
+  const [activeSystem, setActiveSystemState] = useState<string | null>(null);
+  const [activeSampler, setActiveSamplerState] = useState<string | null>(null);
 
   useEffect(() => {
-    setProviders(getProvidersConfig());
-    setActiveProviderState(getActiveProvider());
+    setProviders(SakoConfig.getProvidersConfig());
+    setActiveProviderState(SakoConfig.getActiveProvider());
+
+    setContextTemplates(SakoConfig.getContextTemplates());
+    setInstructTemplates(SakoConfig.getInstructTemplates());
+    setSystemTemplates(SakoConfig.getSystemTemplates());
+    setSamplerTemplates(SakoConfig.getSamplerTemplates());
+
+    setActiveContextState(SakoConfig.getActiveContext());
+    setActiveInstructState(SakoConfig.getActiveInstruct());
+    setActiveSystemState(SakoConfig.getActiveSystem());
+    setActiveSamplerState(SakoConfig.getActiveSampler());
   }, []);
 
-  const handleProviderSelect = (type: ProviderType) => {
-    setActiveProvider(type);
+  const handleProviderSelect = (type: SakoConfig.ProviderType) => {
+    SakoConfig.setActiveProvider(type);
     setActiveProviderState(type);
   };
 
   const handleConfigUpdate = (
-    type: ProviderType,
+    type: SakoConfig.ProviderType,
     field: string,
     value: string
   ) => {
     if (!providers) return;
 
     const updatedConfig = { ...providers[type], [field]: value };
-    updateProviderConfig(type, updatedConfig);
-    setProviders(getProvidersConfig());
+    SakoConfig.updateProviderConfig(type, updatedConfig);
+    setProviders(SakoConfig.getProvidersConfig());
   };
 
   if (!providers) return <div>loading...</div>;
@@ -128,6 +154,105 @@ export default function Page() {
             </div>
           </div>
         )}
+
+        <div className='mt-12 border-t pt-8'>
+          <h2 className='text-2xl mb-4'>templates</h2>
+
+          <div className='mb-8'>
+            <h3 className='text-lg mb-2'>context template</h3>
+            <select
+              value={activeContext || ''}
+              onChange={(e) => {
+                SakoConfig.setActiveContext(e.target.value);
+                setActiveContextState(e.target.value);
+              }}
+              className='px-4 py-2 border'
+            >
+              {Object.keys(contextTemplates).map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className='mb-8'>
+            <h3 className='text-lg mb-2'>instruct template</h3>
+            <select
+              value={activeInstruct || ''}
+              onChange={(e) => {
+                SakoConfig.setActiveInstruct(e.target.value);
+                setActiveInstructState(e.target.value);
+              }}
+              className='px-4 py-2 border'
+            >
+              {Object.keys(instructTemplates).map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className='mb-8'>
+            <h3 className='text-lg mb-2'>system prompt</h3>
+            <select
+              value={activeSystem || ''}
+              onChange={(e) => {
+                SakoConfig.setActiveSystem(e.target.value);
+                setActiveSystemState(e.target.value);
+              }}
+              className='px-4 py-2 border'
+            >
+              {Object.keys(systemTemplates).map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+            {activeSystem && systemTemplates[activeSystem] && (
+              <div className='mt-4 p-4 border bg-base-200'>
+                <p className='text-sm'>
+                  {systemTemplates[activeSystem].content}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className='mb-8'>
+            <h3 className='text-lg mb-2'>sampler preset</h3>
+            <select
+              value={activeSampler || ''}
+              onChange={(e) => {
+                SakoConfig.setActiveSampler(e.target.value);
+                setActiveSamplerState(e.target.value);
+              }}
+              className='px-4 py-2 border'
+            >
+              {Object.keys(samplerTemplates).map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+            {activeSampler && samplerTemplates[activeSampler] && (
+              <div className='mt-4 p-4 border bg-base-200 max-w-md'>
+                <p className='text-sm mb-1'>
+                  temp: {samplerTemplates[activeSampler].temp}
+                </p>
+                <p className='text-sm mb-1'>
+                  top_p: {samplerTemplates[activeSampler].top_p}
+                </p>
+                <p className='text-sm mb-1'>
+                  top_k: {samplerTemplates[activeSampler].top_k}
+                </p>
+                <p className='text-sm mb-1'>
+                  max_length: {samplerTemplates[activeSampler].max_length}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       </main>
     </div>
   );
