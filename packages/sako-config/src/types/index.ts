@@ -12,3 +12,10 @@ export type {
   KoboldCppSamplers,
   ClaudeSamplers,
 } from './samplers';
+
+export type {
+  ContextTemplate,
+  InstructTemplate,
+  SystemPrompt,
+  Templates,
+} from './templates';
