@@ -52,7 +52,7 @@ export function getProvidersConfig(): ProvidersConfig {
 
 export function updateProviderConfig<T extends ProviderType>(
   type: T,
-  config: ProvidersConfig[T]
+  config: ProvidersConfig[T],
 ): void {
   if (typeof window === 'undefined') return;
 
@@ -62,7 +62,7 @@ export function updateProviderConfig<T extends ProviderType>(
 }
 
 export function getProviderConfig<T extends ProviderType>(
-  type: T
+  type: T,
 ): ProvidersConfig[T] {
   const providers = getProvidersConfig();
   return providers[type];
@@ -111,7 +111,7 @@ export function getContextTemplates(): Record<string, ContextTemplate> {
   if (!stored) {
     localStorage.setItem(
       CONTEXT_TEMPLATES_KEY,
-      JSON.stringify(CONTEXT_PRESETS)
+      JSON.stringify(CONTEXT_PRESETS),
     );
     return CONTEXT_PRESETS;
   }
@@ -121,7 +121,7 @@ export function getContextTemplates(): Record<string, ContextTemplate> {
   } catch {
     localStorage.setItem(
       CONTEXT_TEMPLATES_KEY,
-      JSON.stringify(CONTEXT_PRESETS)
+      JSON.stringify(CONTEXT_PRESETS),
     );
     return CONTEXT_PRESETS;
   }
@@ -134,7 +134,7 @@ export function getInstructTemplates(): Record<string, InstructTemplate> {
   if (!stored) {
     localStorage.setItem(
       INSTRUCT_TEMPLATES_KEY,
-      JSON.stringify(INSTRUCT_PRESETS)
+      JSON.stringify(INSTRUCT_PRESETS),
     );
     return INSTRUCT_PRESETS;
   }
@@ -144,7 +144,7 @@ export function getInstructTemplates(): Record<string, InstructTemplate> {
   } catch {
     localStorage.setItem(
       INSTRUCT_TEMPLATES_KEY,
-      JSON.stringify(INSTRUCT_PRESETS)
+      JSON.stringify(INSTRUCT_PRESETS),
     );
     return INSTRUCT_PRESETS;
   }
@@ -174,7 +174,7 @@ export function getSamplerTemplates(): Record<string, SamplerSettings> {
   if (!stored) {
     localStorage.setItem(
       SAMPLER_TEMPLATES_KEY,
-      JSON.stringify(SAMPLER_PRESETS)
+      JSON.stringify(SAMPLER_PRESETS),
     );
     return SAMPLER_PRESETS;
   }
@@ -184,7 +184,7 @@ export function getSamplerTemplates(): Record<string, SamplerSettings> {
   } catch {
     localStorage.setItem(
       SAMPLER_TEMPLATES_KEY,
-      JSON.stringify(SAMPLER_PRESETS)
+      JSON.stringify(SAMPLER_PRESETS),
     );
     return SAMPLER_PRESETS;
   }
@@ -271,5 +271,138 @@ export function setActiveSampler(name: string | null): void {
     localStorage.removeItem(ACTIVE_SAMPLER_KEY);
   } else {
     localStorage.setItem(ACTIVE_SAMPLER_KEY, name);
+  }
+}
+
+export function saveContextTemplate(
+  name: string,
+  template: ContextTemplate,
+): void {
+  if (typeof window === 'undefined') return;
+  const templates = getContextTemplates();
+  templates[name] = template;
+  localStorage.setItem(CONTEXT_TEMPLATES_KEY, JSON.stringify(templates));
+}
+
+export function deleteContextTemplate(name: string): void {
+  if (typeof window === 'undefined') return;
+  const templates = getContextTemplates();
+  delete templates[name];
+  localStorage.setItem(CONTEXT_TEMPLATES_KEY, JSON.stringify(templates));
+  if (getActiveContext() === name) {
+    const remaining = Object.keys(templates);
+    setActiveContext(remaining.length > 0 ? remaining[0]! : null);
+  }
+}
+
+export function renameContextTemplate(oldName: string, newName: string): void {
+  if (typeof window === 'undefined') return;
+  const templates = getContextTemplates();
+  if (templates[oldName]) {
+    templates[newName] = { ...templates[oldName], name: newName };
+    delete templates[oldName];
+    localStorage.setItem(CONTEXT_TEMPLATES_KEY, JSON.stringify(templates));
+    if (getActiveContext() === oldName) {
+      setActiveContext(newName);
+    }
+  }
+}
+
+export function saveInstructTemplate(
+  name: string,
+  template: InstructTemplate,
+): void {
+  if (typeof window === 'undefined') return;
+  const templates = getInstructTemplates();
+  templates[name] = template;
+  localStorage.setItem(INSTRUCT_TEMPLATES_KEY, JSON.stringify(templates));
+}
+
+export function deleteInstructTemplate(name: string): void {
+  if (typeof window === 'undefined') return;
+  const templates = getInstructTemplates();
+  delete templates[name];
+  localStorage.setItem(INSTRUCT_TEMPLATES_KEY, JSON.stringify(templates));
+  if (getActiveInstruct() === name) {
+    const remaining = Object.keys(templates);
+    setActiveInstruct(remaining.length > 0 ? remaining[0]! : null);
+  }
+}
+
+export function renameInstructTemplate(oldName: string, newName: string): void {
+  if (typeof window === 'undefined') return;
+  const templates = getInstructTemplates();
+  if (templates[oldName]) {
+    templates[newName] = { ...templates[oldName], name: newName };
+    delete templates[oldName];
+    localStorage.setItem(INSTRUCT_TEMPLATES_KEY, JSON.stringify(templates));
+    if (getActiveInstruct() === oldName) {
+      setActiveInstruct(newName);
+    }
+  }
+}
+
+export function saveSystemTemplate(name: string, template: SystemPrompt): void {
+  if (typeof window === 'undefined') return;
+  const templates = getSystemTemplates();
+  templates[name] = template;
+  localStorage.setItem(SYSTEM_TEMPLATES_KEY, JSON.stringify(templates));
+}
+
+export function deleteSystemTemplate(name: string): void {
+  if (typeof window === 'undefined') return;
+  const templates = getSystemTemplates();
+  delete templates[name];
+  localStorage.setItem(SYSTEM_TEMPLATES_KEY, JSON.stringify(templates));
+  if (getActiveSystem() === name) {
+    const remaining = Object.keys(templates);
+    setActiveSystem(remaining.length > 0 ? remaining[0]! : null);
+  }
+}
+
+export function renameSystemTemplate(oldName: string, newName: string): void {
+  if (typeof window === 'undefined') return;
+  const templates = getSystemTemplates();
+  if (templates[oldName]) {
+    templates[newName] = { ...templates[oldName], name: newName };
+    delete templates[oldName];
+    localStorage.setItem(SYSTEM_TEMPLATES_KEY, JSON.stringify(templates));
+    if (getActiveSystem() === oldName) {
+      setActiveSystem(newName);
+    }
+  }
+}
+
+export function saveSamplerTemplate(
+  name: string,
+  template: SamplerSettings,
+): void {
+  if (typeof window === 'undefined') return;
+  const templates = getSamplerTemplates();
+  templates[name] = template;
+  localStorage.setItem(SAMPLER_TEMPLATES_KEY, JSON.stringify(templates));
+}
+
+export function deleteSamplerTemplate(name: string): void {
+  if (typeof window === 'undefined') return;
+  const templates = getSamplerTemplates();
+  delete templates[name];
+  localStorage.setItem(SAMPLER_TEMPLATES_KEY, JSON.stringify(templates));
+  if (getActiveSampler() === name) {
+    const remaining = Object.keys(templates);
+    setActiveSampler(remaining.length > 0 ? remaining[0]! : null);
+  }
+}
+
+export function renameSamplerTemplate(oldName: string, newName: string): void {
+  if (typeof window === 'undefined') return;
+  const templates = getSamplerTemplates();
+  if (templates[oldName]) {
+    templates[newName] = { ...templates[oldName] };
+    delete templates[oldName];
+    localStorage.setItem(SAMPLER_TEMPLATES_KEY, JSON.stringify(templates));
+    if (getActiveSampler() === oldName) {
+      setActiveSampler(newName);
+    }
   }
 }
