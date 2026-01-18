@@ -1,5 +1,6 @@
-@import "tailwindcss";
-@import "@repo/tailwind-config";
+@import 'tailwindcss';
+@import '@repo/tailwind-config';
+@plugin 'daisyui';
 
 :root {
   --foreground-rgb: 0, 0, 0;
