@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@iconify/react": "^6.0.2",
+    "@repo/sako-config": "workspace:*",
     "@repo/ui": "workspace:*",
     "next": "16.0.10",
     "react": "^19.2.0",
