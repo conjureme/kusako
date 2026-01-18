@@ -1,3 +1,51 @@
 @import 'tailwindcss';
 @import '@repo/tailwind-config';
 @plugin 'daisyui';
+
+@plugin 'daisyui/theme' {
+  name: 'sako-light';
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: oklch(99% 0.01 330);
+  --color-base-200: oklch(97% 0.01 330);
+  --color-base-300: oklch(94% 0.02 330);
+  --color-base-content: oklch(25% 0.02 280);
+
+  --color-primary: oklch(80% 0.15 340);
+  --color-primary-content: oklch(30% 0.05 340);
+
+  --color-secondary: oklch(85% 0.08 260);
+  --color-secondary-content: oklch(30% 0.05 260);
+
+  --color-accent: oklch(88% 0.12 320);
+  --color-accent-content: oklch(30% 0.05 320);
+
+  --color-neutral: oklch(40% 0.03 280);
+  --color-neutral-content: oklch(98% 0.01 280);
+
+  --color-info: oklch(75% 0.15 230);
+  --color-info-content: oklch(25% 0.03 230);
+
+  --color-success: oklch(70% 0.18 150);
+  --color-success-content: oklch(25% 0.03 150);
+
+  --color-warning: oklch(78% 0.18 70);
+  --color-warning-content: oklch(25% 0.03 70);
+
+  --color-error: oklch(70% 0.22 20);
+  --color-error-content: oklch(98% 0.01 20);
+
+  --radius-selector: 1rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+
+  --border: 1px;
+
+  --depth: 1;
+  --noise: 0;
+}
