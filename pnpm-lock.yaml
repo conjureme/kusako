@@ -170,6 +170,15 @@ importers:
         specifier: ^8.39.0
         version: 8.46.2(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.2)
 
+  packages/sako-config:
+    devDependencies:
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.2
+
   packages/tailwind-config:
     devDependencies:
       postcss:
