@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 
 interface TemplateSelectorProps {
@@ -9,8 +9,13 @@ interface TemplateSelectorProps {
   onSelect: (name: string) => void;
   onCreate: (name: string) => void;
   onDelete: (name: string) => void;
-  onRename: (oldName: string, newName: string) => void;
+  onRename: (newName: string) => void;
+  onSave: () => void;
+  onRestore: () => void;
+  isDirty: boolean;
 }
+
+type ModalMode = 'create' | 'rename' | 'delete' | null;
 
 export default function TemplateSelector({
   templates,
@@ -19,187 +24,237 @@ export default function TemplateSelector({
   onCreate,
   onDelete,
   onRename,
+  onSave,
+  onRestore,
+  isDirty,
 }: TemplateSelectorProps) {
-  const [isCreating, setIsCreating] = useState(false);
-  const [isRenaming, setIsRenaming] = useState<string | null>(null);
-  const [newName, setNewName] = useState('');
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
-    null,
-  );
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<ModalMode>(null);
+  const [inputValue, setInputValue] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleCreate = () => {
-    if (newName.trim() && !templates.includes(newName.trim())) {
-      onCreate(newName.trim());
-      setNewName('');
-      setIsCreating(false);
+    const trimmed = inputValue.trim();
+    if (trimmed && !templates.includes(trimmed)) {
+      onCreate(trimmed);
+      setInputValue('');
+      setModalMode(null);
     }
   };
 
-  const handleRename = (oldName: string) => {
-    if (newName.trim() && !templates.includes(newName.trim())) {
-      onRename(oldName, newName.trim());
-      setNewName('');
-      setIsRenaming(null);
+  const handleRename = () => {
+    const trimmed = inputValue.trim();
+    if (activeTemplate && trimmed && !templates.includes(trimmed)) {
+      onRename(trimmed);
+      setInputValue('');
+      setModalMode(null);
     }
   };
 
-  const handleDelete = (name: string) => {
-    onDelete(name);
-    setShowDeleteConfirm(null);
+  const handleDelete = () => {
+    if (activeTemplate) {
+      onDelete(activeTemplate);
+      setModalMode(null);
+    }
+  };
+
+  const openRenameModal = () => {
+    setInputValue('');
+    setModalMode('rename');
+  };
+
+  const openCreateModal = () => {
+    setInputValue('');
+    setModalMode('create');
+  };
+
+  const closeModal = () => {
+    setModalMode(null);
+    setInputValue('');
+  };
+
+  const isInputValid = () => {
+    const trimmed = inputValue.trim();
+    if (!trimmed) return false;
+    if (templates.includes(trimmed)) return false;
+    return true;
   };
 
   return (
-    <div className='space-y-3'>
-      <div className='flex items-center gap-2 flex-wrap'>
-        {templates.map((name) => (
-          <div key={name} className='relative group'>
-            {isRenaming === name ? (
-              <div className='flex items-center gap-1'>
-                <input
-                  type='text'
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleRename(name);
-                    if (e.key === 'Escape') {
-                      setIsRenaming(null);
-                      setNewName('');
-                    }
-                  }}
-                  placeholder={name}
-                  autoFocus
-                  className='px-3 py-1.5 text-sm rounded-lg bg-base-200 border border-primary outline-none w-32'
-                />
-                <button
-                  onClick={() => handleRename(name)}
-                  className='p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors'
-                >
-                  <Icon icon='material-symbols:check' className='w-4 h-4' />
-                </button>
-                <button
-                  onClick={() => {
-                    setIsRenaming(null);
-                    setNewName('');
-                  }}
-                  className='p-1.5 text-base-content/50 hover:bg-base-200 rounded-lg transition-colors'
-                >
-                  <Icon icon='material-symbols:close' className='w-4 h-4' />
-                </button>
-              </div>
-            ) : (
+    <div className='flex items-center gap-2'>
+      <div className='relative' ref={dropdownRef}>
+        <button
+          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          className='flex items-center gap-2 px-4 py-2.5 rounded-xl bg-base-200/50 border border-base-content/10 hover:border-base-content/20 hover:bg-base-200 transition-all text-sm min-w-40'
+        >
+          <span className='flex-1 text-left truncate'>
+            {activeTemplate || 'select template'}
+          </span>
+          {isDirty && (
+            <span
+              className='w-2 h-2 rounded-full bg-warning'
+              title='unsaved changes'
+            />
+          )}
+          <Icon
+            icon='material-symbols:expand-more'
+            className={`w-5 h-5 text-base-content/50 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+
+        {isDropdownOpen && (
+          <div className='absolute top-full left-0 mt-1 z-20 w-full min-w-48 py-1 bg-base-100 rounded-xl shadow-lg border border-base-content/10'>
+            {templates.map((name) => (
               <button
-                onClick={() => onSelect(name)}
-                className={`px-4 py-2 text-sm rounded-xl transition-all duration-200 flex items-center gap-2 ${
+                key={name}
+                onClick={() => {
+                  onSelect(name);
+                  setIsDropdownOpen(false);
+                }}
+                className={`w-full px-4 py-2 text-sm text-left transition-colors ${
                   activeTemplate === name
-                    ? 'bg-primary text-primary-content shadow-sm'
-                    : 'bg-base-200/50 text-base-content/70 hover:bg-base-200 hover:text-base-content'
+                    ? 'bg-primary/10 text-primary'
+                    : 'hover:bg-base-200 text-base-content'
                 }`}
               >
-                <span>{name}</span>
-                {activeTemplate === name && (
-                  <div className='flex items-center gap-0.5 ml-1'>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsRenaming(name);
-                        setNewName(name);
-                      }}
-                      className='p-1 hover:bg-primary-content/20 rounded transition-colors'
-                      title='rename template'
-                    >
-                      <Icon
-                        icon='material-symbols:edit-outline'
-                        className='w-3.5 h-3.5'
-                      />
-                    </button>
-                    {templates.length > 1 && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowDeleteConfirm(name);
-                        }}
-                        className='p-1 hover:bg-primary-content/20 rounded transition-colors'
-                        title='delete template'
-                      >
-                        <Icon
-                          icon='material-symbols:delete-outline'
-                          className='w-3.5 h-3.5'
-                        />
-                      </button>
-                    )}
-                  </div>
-                )}
+                {name}
               </button>
-            )}
+            ))}
+          </div>
+        )}
+      </div>
 
-            {showDeleteConfirm === name && (
-              <div className='absolute top-full left-0 mt-2 z-10 p-3 bg-base-100 rounded-xl shadow-lg border border-base-content/10 min-w-48'>
-                <p className='text-sm text-base-content mb-3'>
-                  delete "{name}"?
+      <div className='flex items-center gap-1'>
+        <button
+          onClick={openCreateModal}
+          className='p-2 rounded-lg hover:bg-base-200 text-base-content/50 hover:text-base-content transition-colors'
+          title='new template'
+        >
+          <Icon icon='material-symbols:add' className='w-4.5 h-4.5' />
+        </button>
+
+        <button
+          onClick={openRenameModal}
+          disabled={!activeTemplate}
+          className='p-2 rounded-lg hover:bg-base-200 text-base-content/50 hover:text-base-content transition-colors disabled:opacity-30 disabled:cursor-not-allowed'
+          title='save as new template'
+        >
+          <Icon icon='material-symbols:edit-outline' className='w-4.5 h-4.5' />
+        </button>
+
+        <button
+          onClick={onSave}
+          disabled={!isDirty}
+          className='p-2 rounded-lg hover:bg-success/10 text-base-content/50 hover:text-success transition-colors disabled:opacity-30 disabled:cursor-not-allowed'
+          title='save changes'
+        >
+          <Icon icon='material-symbols:save-outline' className='w-4.5 h-4.5' />
+        </button>
+
+        <button
+          onClick={onRestore}
+          disabled={!isDirty}
+          className='p-2 rounded-lg hover:bg-warning/10 text-base-content/50 hover:text-warning transition-colors disabled:opacity-30 disabled:cursor-not-allowed'
+          title='restore to saved'
+        >
+          <Icon icon='material-symbols:restart-alt' className='w-4.5 h-4.5' />
+        </button>
+
+        <button
+          onClick={() => setModalMode('delete')}
+          disabled={!activeTemplate || templates.length <= 1}
+          className='p-2 rounded-lg hover:bg-error/10 text-base-content/50 hover:text-error transition-colors disabled:opacity-30 disabled:cursor-not-allowed'
+          title='delete template'
+        >
+          <Icon
+            icon='material-symbols:delete-outline'
+            className='w-4.5 h-4.5'
+          />
+        </button>
+      </div>
+
+      {modalMode && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'>
+          <div className='bg-base-100 rounded-2xl shadow-xl border border-base-content/10 p-6 w-80'>
+            {modalMode === 'delete' ? (
+              <>
+                <h3 className='text-lg font-semibold text-base-content mb-2'>
+                  delete template
+                </h3>
+                <p className='text-sm text-base-content/60 mb-6'>
+                  are you sure you want to delete "{activeTemplate}"?
                 </p>
-                <div className='flex gap-2'>
+                <div className='flex gap-3'>
                   <button
-                    onClick={() => handleDelete(name)}
-                    className='flex-1 px-3 py-1.5 text-sm bg-error text-error-content rounded-lg hover:opacity-90 transition-opacity'
-                  >
-                    delete
-                  </button>
-                  <button
-                    onClick={() => setShowDeleteConfirm(null)}
-                    className='flex-1 px-3 py-1.5 text-sm bg-base-200 rounded-lg hover:bg-base-300 transition-colors'
+                    onClick={closeModal}
+                    className='flex-1 px-4 py-2.5 text-sm rounded-xl bg-base-200 hover:bg-base-300 transition-colors'
                   >
                     cancel
                   </button>
+                  <button
+                    onClick={handleDelete}
+                    className='flex-1 px-4 py-2.5 text-sm rounded-xl bg-error text-error-content hover:opacity-90 transition-opacity'
+                  >
+                    delete
+                  </button>
                 </div>
-              </div>
+              </>
+            ) : (
+              <>
+                <h3 className='text-lg font-semibold text-base-content mb-4'>
+                  {modalMode === 'create'
+                    ? 'new template'
+                    : 'save as new template'}
+                </h3>
+                <input
+                  type='text'
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && isInputValid()) {
+                      modalMode === 'create' ? handleCreate() : handleRename();
+                    }
+                    if (e.key === 'Escape') closeModal();
+                  }}
+                  placeholder='template name'
+                  autoFocus
+                  className='w-full px-4 py-3 text-sm rounded-xl bg-base-200/50 border border-base-content/10 focus:border-primary outline-none mb-4'
+                />
+                <div className='flex gap-3'>
+                  <button
+                    onClick={closeModal}
+                    className='flex-1 px-4 py-2.5 text-sm rounded-xl bg-base-200 hover:bg-base-300 transition-colors'
+                  >
+                    cancel
+                  </button>
+                  <button
+                    onClick={
+                      modalMode === 'create' ? handleCreate : handleRename
+                    }
+                    disabled={!isInputValid()}
+                    className='flex-1 px-4 py-2.5 text-sm rounded-xl bg-primary text-primary-content hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed'
+                  >
+                    {modalMode === 'create' ? 'create' : 'save'}
+                  </button>
+                </div>
+              </>
             )}
           </div>
-        ))}
-
-        {isCreating ? (
-          <div className='flex items-center gap-1'>
-            <input
-              type='text'
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleCreate();
-                if (e.key === 'Escape') {
-                  setIsCreating(false);
-                  setNewName('');
-                }
-              }}
-              placeholder='template name'
-              autoFocus
-              className='px-3 py-1.5 text-sm rounded-lg bg-base-200 border border-primary outline-none w-36'
-            />
-            <button
-              onClick={handleCreate}
-              disabled={!newName.trim() || templates.includes(newName.trim())}
-              className='p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
-            >
-              <Icon icon='material-symbols:check' className='w-4 h-4' />
-            </button>
-            <button
-              onClick={() => {
-                setIsCreating(false);
-                setNewName('');
-              }}
-              className='p-1.5 text-base-content/50 hover:bg-base-200 rounded-lg transition-colors'
-            >
-              <Icon icon='material-symbols:close' className='w-4 h-4' />
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setIsCreating(true)}
-            className='px-3 py-2 text-sm rounded-xl border-2 border-dashed border-base-content/20 text-base-content/50 hover:border-primary/50 hover:text-primary transition-all duration-200 flex items-center gap-1.5'
-          >
-            <Icon icon='material-symbols:add' className='w-4 h-4' />
-            <span>new</span>
-          </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

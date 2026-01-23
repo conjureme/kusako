@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Icon } from '@iconify/react';
 
 import * as SakoConfig from '@repo/sako-config';
@@ -12,28 +12,30 @@ export default function ContextSettings() {
   const [templates, setTemplates] = useState<Record<string, ContextTemplate>>(
     {},
   );
-  const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
   const [currentTemplate, setCurrentTemplate] =
     useState<ContextTemplate | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+
+  const checkDirty = useCallback(() => {
+    setIsDirty(SakoConfig.isContextDirty());
+  }, []);
 
   useEffect(() => {
     const loadedTemplates = SakoConfig.getContextTemplates();
     setTemplates(loadedTemplates);
     const active = SakoConfig.getActiveContext();
-    setActiveTemplate(active);
-    if (active && loadedTemplates[active]) {
-      setCurrentTemplate(loadedTemplates[active]);
-    }
-  }, []);
+    setCurrentTemplate(active);
+    checkDirty();
+  }, [checkDirty]);
 
-  const handleTemplateSelect = (
-    name: string,
-    templatesOverride?: Record<string, ContextTemplate>,
-  ) => {
-    const source = templatesOverride || templates;
-    SakoConfig.setActiveContext(name);
-    setActiveTemplate(name);
-    setCurrentTemplate(source[name] || null);
+  const handleTemplateSelect = (name: string) => {
+    const allTemplates = SakoConfig.getContextTemplates();
+    const template = allTemplates[name];
+    if (template) {
+      SakoConfig.setActiveContext(template);
+      setCurrentTemplate(template);
+      checkDirty();
+    }
   };
 
   const handleTemplateCreate = (name: string) => {
@@ -49,32 +51,39 @@ export default function ContextSettings() {
       single_line: false,
       name: name,
     };
-    SakoConfig.saveContextTemplate(name, defaultTemplate);
-    const updated = SakoConfig.getContextTemplates();
-    setTemplates(updated);
-    handleTemplateSelect(name, updated);
+    const newTemplate = SakoConfig.createContextTemplate(name, defaultTemplate);
+    setTemplates(SakoConfig.getContextTemplates());
+    setCurrentTemplate(newTemplate);
+    checkDirty();
   };
 
   const handleTemplateDelete = (name: string) => {
     SakoConfig.deleteContextTemplate(name);
-    const updated = SakoConfig.getContextTemplates();
-    setTemplates(updated);
-    const remaining = Object.keys(updated);
-    if (remaining.length > 0) {
-      handleTemplateSelect(remaining[0]!, updated);
-    } else {
-      setActiveTemplate(null);
-      setCurrentTemplate(null);
+    setTemplates(SakoConfig.getContextTemplates());
+    setCurrentTemplate(SakoConfig.getActiveContext());
+    checkDirty();
+  };
+
+  const handleTemplateRename = (newName: string) => {
+    const renamed = SakoConfig.renameContextTemplate(newName);
+    if (renamed) {
+      setTemplates(SakoConfig.getContextTemplates());
+      setCurrentTemplate(renamed);
+      checkDirty();
     }
   };
 
-  const handleTemplateRename = (oldName: string, newName: string) => {
-    SakoConfig.renameContextTemplate(oldName, newName);
-    const updated = SakoConfig.getContextTemplates();
-    setTemplates(updated);
-    if (activeTemplate === oldName) {
-      setActiveTemplate(newName);
-      setCurrentTemplate(updated[newName] || null);
+  const handleSave = () => {
+    SakoConfig.commitActiveContext();
+    setTemplates(SakoConfig.getContextTemplates());
+    checkDirty();
+  };
+
+  const handleRestore = () => {
+    const restored = SakoConfig.restoreActiveContext();
+    if (restored) {
+      setCurrentTemplate(restored);
+      checkDirty();
     }
   };
 
@@ -82,12 +91,13 @@ export default function ContextSettings() {
     field: keyof ContextTemplate,
     value: string | boolean,
   ) => {
-    if (!currentTemplate || !activeTemplate) return;
+    if (!currentTemplate) return;
 
-    const updatedTemplate = { ...currentTemplate, [field]: value };
-    SakoConfig.saveContextTemplate(activeTemplate, updatedTemplate);
-    setTemplates((prev) => ({ ...prev, [activeTemplate]: updatedTemplate }));
-    setCurrentTemplate(updatedTemplate);
+    const updated = SakoConfig.updateActiveContext({ [field]: value });
+    if (updated) {
+      setCurrentTemplate(updated);
+      checkDirty();
+    }
   };
 
   if (!currentTemplate) {
@@ -117,11 +127,14 @@ export default function ContextSettings() {
 
       <TemplateSelector
         templates={Object.keys(templates)}
-        activeTemplate={activeTemplate}
+        activeTemplate={currentTemplate.name || null}
         onSelect={handleTemplateSelect}
         onCreate={handleTemplateCreate}
         onDelete={handleTemplateDelete}
         onRename={handleTemplateRename}
+        onSave={handleSave}
+        onRestore={handleRestore}
+        isDirty={isDirty}
       />
 
       <div className='space-y-5'>

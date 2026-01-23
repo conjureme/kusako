@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Icon } from '@iconify/react';
 
 import * as SakoConfig from '@repo/sako-config';
@@ -10,29 +10,31 @@ import TemplateSelector from './template-selector';
 
 export default function SystemSettings() {
   const [templates, setTemplates] = useState<Record<string, SystemPrompt>>({});
-  const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
   const [currentTemplate, setCurrentTemplate] = useState<SystemPrompt | null>(
     null,
   );
+  const [isDirty, setIsDirty] = useState(false);
+
+  const checkDirty = useCallback(() => {
+    setIsDirty(SakoConfig.isSystemDirty());
+  }, []);
 
   useEffect(() => {
     const loadedTemplates = SakoConfig.getSystemTemplates();
     setTemplates(loadedTemplates);
     const active = SakoConfig.getActiveSystem();
-    setActiveTemplate(active);
-    if (active && loadedTemplates[active]) {
-      setCurrentTemplate(loadedTemplates[active]);
-    }
-  }, []);
+    setCurrentTemplate(active);
+    checkDirty();
+  }, [checkDirty]);
 
-  const handleTemplateSelect = (
-    name: string,
-    templatesOverride?: Record<string, SystemPrompt>,
-  ) => {
-    const source = templatesOverride || templates;
-    SakoConfig.setActiveSystem(name);
-    setActiveTemplate(name);
-    setCurrentTemplate(source[name] || null);
+  const handleTemplateSelect = (name: string) => {
+    const allTemplates = SakoConfig.getSystemTemplates();
+    const template = allTemplates[name];
+    if (template) {
+      SakoConfig.setActiveSystem(template);
+      setCurrentTemplate(template);
+      checkDirty();
+    }
   };
 
   const handleTemplateCreate = (name: string) => {
@@ -40,42 +42,50 @@ export default function SystemSettings() {
       name: name,
       content: '',
     };
-    SakoConfig.saveSystemTemplate(name, defaultTemplate);
-    const updated = SakoConfig.getSystemTemplates();
-    setTemplates(updated);
-    handleTemplateSelect(name, updated);
+    const newTemplate = SakoConfig.createSystemTemplate(name, defaultTemplate);
+    setTemplates(SakoConfig.getSystemTemplates());
+    setCurrentTemplate(newTemplate);
+    checkDirty();
   };
 
   const handleTemplateDelete = (name: string) => {
     SakoConfig.deleteSystemTemplate(name);
-    const updated = SakoConfig.getSystemTemplates();
-    setTemplates(updated);
-    const remaining = Object.keys(updated);
-    if (remaining.length > 0) {
-      handleTemplateSelect(remaining[0]!, updated);
-    } else {
-      setActiveTemplate(null);
-      setCurrentTemplate(null);
+    setTemplates(SakoConfig.getSystemTemplates());
+    setCurrentTemplate(SakoConfig.getActiveSystem());
+    checkDirty();
+  };
+
+  const handleTemplateRename = (newName: string) => {
+    const renamed = SakoConfig.renameSystemTemplate(newName);
+    if (renamed) {
+      setTemplates(SakoConfig.getSystemTemplates());
+      setCurrentTemplate(renamed);
+      checkDirty();
     }
   };
 
-  const handleTemplateRename = (oldName: string, newName: string) => {
-    SakoConfig.renameSystemTemplate(oldName, newName);
-    const updated = SakoConfig.getSystemTemplates();
-    setTemplates(updated);
-    if (activeTemplate === oldName) {
-      setActiveTemplate(newName);
-      setCurrentTemplate(updated[newName] || null);
+  const handleSave = () => {
+    SakoConfig.commitActiveSystem();
+    setTemplates(SakoConfig.getSystemTemplates());
+    checkDirty();
+  };
+
+  const handleRestore = () => {
+    const restored = SakoConfig.restoreActiveSystem();
+    if (restored) {
+      setCurrentTemplate(restored);
+      checkDirty();
     }
   };
 
   const handleContentUpdate = (content: string) => {
-    if (!currentTemplate || !activeTemplate) return;
+    if (!currentTemplate) return;
 
-    const updatedTemplate = { ...currentTemplate, content };
-    SakoConfig.saveSystemTemplate(activeTemplate, updatedTemplate);
-    setTemplates((prev) => ({ ...prev, [activeTemplate]: updatedTemplate }));
-    setCurrentTemplate(updatedTemplate);
+    const updated = SakoConfig.updateActiveSystem({ content });
+    if (updated) {
+      setCurrentTemplate(updated);
+      checkDirty();
+    }
   };
 
   if (!currentTemplate) {
@@ -109,11 +119,14 @@ export default function SystemSettings() {
 
       <TemplateSelector
         templates={Object.keys(templates)}
-        activeTemplate={activeTemplate}
+        activeTemplate={currentTemplate.name || null}
         onSelect={handleTemplateSelect}
         onCreate={handleTemplateCreate}
         onDelete={handleTemplateDelete}
         onRename={handleTemplateRename}
+        onSave={handleSave}
+        onRestore={handleRestore}
+        isDirty={isDirty}
       />
 
       <div className='space-y-4'>

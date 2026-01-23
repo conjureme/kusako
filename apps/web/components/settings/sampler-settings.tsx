@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Icon } from '@iconify/react';
 
 import * as SakoConfig from '@repo/sako-config';
@@ -129,9 +129,9 @@ export default function SamplerSettings() {
   const [templates, setTemplates] = useState<
     Record<string, SamplerSettingsType>
   >({});
-  const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
   const [currentTemplate, setCurrentTemplate] =
     useState<SamplerSettingsType | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>
   >({
@@ -145,56 +145,66 @@ export default function SamplerSettings() {
     tokens: false,
   });
 
+  const checkDirty = useCallback(() => {
+    setIsDirty(SakoConfig.isSamplerDirty());
+  }, []);
+
   useEffect(() => {
     const loadedTemplates = SakoConfig.getSamplerTemplates();
     setTemplates(loadedTemplates);
     const active = SakoConfig.getActiveSampler();
-    setActiveTemplate(active);
-    if (active && loadedTemplates[active]) {
-      setCurrentTemplate(loadedTemplates[active]);
-    }
-  }, []);
+    setCurrentTemplate(active);
+    checkDirty();
+  }, [checkDirty]);
 
-  const handleTemplateSelect = (
-    name: string,
-    templatesOverride?: Record<string, SamplerSettingsType>,
-  ) => {
-    const source = templatesOverride || templates;
-    SakoConfig.setActiveSampler(name);
-    setActiveTemplate(name);
-    setCurrentTemplate(source[name] || null);
+  const handleTemplateSelect = (name: string) => {
+    const allTemplates = SakoConfig.getSamplerTemplates();
+    const template = allTemplates[name];
+    if (template) {
+      const templateWithName = { ...template, name };
+      SakoConfig.setActiveSampler(templateWithName);
+      setCurrentTemplate(templateWithName);
+      checkDirty();
+    }
   };
 
   const handleTemplateCreate = (name: string) => {
     const defaultTemplate = SakoConfig.getSamplerTemplates()['default'];
     if (defaultTemplate) {
-      SakoConfig.saveSamplerTemplate(name, { ...defaultTemplate });
-      const updated = SakoConfig.getSamplerTemplates();
-      setTemplates(updated);
-      handleTemplateSelect(name, updated);
+      const newTemplate = SakoConfig.createSamplerTemplate(name, defaultTemplate);
+      setTemplates(SakoConfig.getSamplerTemplates());
+      setCurrentTemplate(newTemplate);
+      checkDirty();
     }
   };
 
   const handleTemplateDelete = (name: string) => {
     SakoConfig.deleteSamplerTemplate(name);
-    const updated = SakoConfig.getSamplerTemplates();
-    setTemplates(updated);
-    const remaining = Object.keys(updated);
-    if (remaining.length > 0) {
-      handleTemplateSelect(remaining[0]!, updated);
-    } else {
-      setActiveTemplate(null);
-      setCurrentTemplate(null);
+    setTemplates(SakoConfig.getSamplerTemplates());
+    setCurrentTemplate(SakoConfig.getActiveSampler());
+    checkDirty();
+  };
+
+  const handleTemplateRename = (newName: string) => {
+    const renamed = SakoConfig.renameSamplerTemplate(newName);
+    if (renamed) {
+      setTemplates(SakoConfig.getSamplerTemplates());
+      setCurrentTemplate(renamed);
+      checkDirty();
     }
   };
 
-  const handleTemplateRename = (oldName: string, newName: string) => {
-    SakoConfig.renameSamplerTemplate(oldName, newName);
-    const updated = SakoConfig.getSamplerTemplates();
-    setTemplates(updated);
-    if (activeTemplate === oldName) {
-      setActiveTemplate(newName);
-      setCurrentTemplate(updated[newName] || null);
+  const handleSave = () => {
+    SakoConfig.commitActiveSampler();
+    setTemplates(SakoConfig.getSamplerTemplates());
+    checkDirty();
+  };
+
+  const handleRestore = () => {
+    const restored = SakoConfig.restoreActiveSampler();
+    if (restored) {
+      setCurrentTemplate(restored);
+      checkDirty();
     }
   };
 
@@ -202,12 +212,13 @@ export default function SamplerSettings() {
     field: keyof SamplerSettingsType,
     value: string | number | boolean,
   ) => {
-    if (!currentTemplate || !activeTemplate) return;
+    if (!currentTemplate) return;
 
-    const updatedTemplate = { ...currentTemplate, [field]: value };
-    SakoConfig.saveSamplerTemplate(activeTemplate, updatedTemplate);
-    setTemplates((prev) => ({ ...prev, [activeTemplate]: updatedTemplate }));
-    setCurrentTemplate(updatedTemplate);
+    const updated = SakoConfig.updateActiveSampler({ [field]: value });
+    if (updated) {
+      setCurrentTemplate(updated);
+      checkDirty();
+    }
   };
 
   const toggleSection = (section: string) => {
@@ -241,11 +252,14 @@ export default function SamplerSettings() {
 
       <TemplateSelector
         templates={Object.keys(templates)}
-        activeTemplate={activeTemplate}
+        activeTemplate={currentTemplate.name || null}
         onSelect={handleTemplateSelect}
         onCreate={handleTemplateCreate}
         onDelete={handleTemplateDelete}
         onRename={handleTemplateRename}
+        onSave={handleSave}
+        onRestore={handleRestore}
+        isDirty={isDirty}
       />
 
       <div className='space-y-3'>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Icon } from '@iconify/react';
 
 import * as SakoConfig from '@repo/sako-config';
@@ -12,28 +12,30 @@ export default function InstructSettings() {
   const [templates, setTemplates] = useState<Record<string, InstructTemplate>>(
     {},
   );
-  const [activeTemplate, setActiveTemplate] = useState<string | null>(null);
   const [currentTemplate, setCurrentTemplate] =
     useState<InstructTemplate | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+
+  const checkDirty = useCallback(() => {
+    setIsDirty(SakoConfig.isInstructDirty());
+  }, []);
 
   useEffect(() => {
     const loadedTemplates = SakoConfig.getInstructTemplates();
     setTemplates(loadedTemplates);
     const active = SakoConfig.getActiveInstruct();
-    setActiveTemplate(active);
-    if (active && loadedTemplates[active]) {
-      setCurrentTemplate(loadedTemplates[active]);
-    }
-  }, []);
+    setCurrentTemplate(active);
+    checkDirty();
+  }, [checkDirty]);
 
-  const handleTemplateSelect = (
-    name: string,
-    templatesOverride?: Record<string, InstructTemplate>,
-  ) => {
-    const source = templatesOverride || templates;
-    SakoConfig.setActiveInstruct(name);
-    setActiveTemplate(name);
-    setCurrentTemplate(source[name] || null);
+  const handleTemplateSelect = (name: string) => {
+    const allTemplates = SakoConfig.getInstructTemplates();
+    const template = allTemplates[name];
+    if (template) {
+      SakoConfig.setActiveInstruct(template);
+      setCurrentTemplate(template);
+      checkDirty();
+    }
   };
 
   const handleTemplateCreate = (name: string) => {
@@ -62,32 +64,42 @@ export default function InstructSettings() {
       names_force_groups: false,
       name: name,
     };
-    SakoConfig.saveInstructTemplate(name, defaultTemplate);
-    const updated = SakoConfig.getInstructTemplates();
-    setTemplates(updated);
-    handleTemplateSelect(name, updated);
+    const newTemplate = SakoConfig.createInstructTemplate(
+      name,
+      defaultTemplate,
+    );
+    setTemplates(SakoConfig.getInstructTemplates());
+    setCurrentTemplate(newTemplate);
+    checkDirty();
   };
 
   const handleTemplateDelete = (name: string) => {
     SakoConfig.deleteInstructTemplate(name);
-    const updated = SakoConfig.getInstructTemplates();
-    setTemplates(updated);
-    const remaining = Object.keys(updated);
-    if (remaining.length > 0) {
-      handleTemplateSelect(remaining[0]!, updated);
-    } else {
-      setActiveTemplate(null);
-      setCurrentTemplate(null);
+    setTemplates(SakoConfig.getInstructTemplates());
+    setCurrentTemplate(SakoConfig.getActiveInstruct());
+    checkDirty();
+  };
+
+  const handleTemplateRename = (newName: string) => {
+    const renamed = SakoConfig.renameInstructTemplate(newName);
+    if (renamed) {
+      setTemplates(SakoConfig.getInstructTemplates());
+      setCurrentTemplate(renamed);
+      checkDirty();
     }
   };
 
-  const handleTemplateRename = (oldName: string, newName: string) => {
-    SakoConfig.renameInstructTemplate(oldName, newName);
-    const updated = SakoConfig.getInstructTemplates();
-    setTemplates(updated);
-    if (activeTemplate === oldName) {
-      setActiveTemplate(newName);
-      setCurrentTemplate(updated[newName] || null);
+  const handleSave = () => {
+    SakoConfig.commitActiveInstruct();
+    setTemplates(SakoConfig.getInstructTemplates());
+    checkDirty();
+  };
+
+  const handleRestore = () => {
+    const restored = SakoConfig.restoreActiveInstruct();
+    if (restored) {
+      setCurrentTemplate(restored);
+      checkDirty();
     }
   };
 
@@ -95,12 +107,13 @@ export default function InstructSettings() {
     field: keyof InstructTemplate,
     value: string | boolean,
   ) => {
-    if (!currentTemplate || !activeTemplate) return;
+    if (!currentTemplate) return;
 
-    const updatedTemplate = { ...currentTemplate, [field]: value };
-    SakoConfig.saveInstructTemplate(activeTemplate, updatedTemplate);
-    setTemplates((prev) => ({ ...prev, [activeTemplate]: updatedTemplate }));
-    setCurrentTemplate(updatedTemplate);
+    const updated = SakoConfig.updateActiveInstruct({ [field]: value });
+    if (updated) {
+      setCurrentTemplate(updated);
+      checkDirty();
+    }
   };
 
   if (!currentTemplate) {
@@ -130,11 +143,14 @@ export default function InstructSettings() {
 
       <TemplateSelector
         templates={Object.keys(templates)}
-        activeTemplate={activeTemplate}
+        activeTemplate={currentTemplate.name || null}
         onSelect={handleTemplateSelect}
         onCreate={handleTemplateCreate}
         onDelete={handleTemplateDelete}
         onRename={handleTemplateRename}
+        onSave={handleSave}
+        onRestore={handleRestore}
+        isDirty={isDirty}
       />
 
       <div className='space-y-6'>
