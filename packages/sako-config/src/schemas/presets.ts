@@ -29,7 +29,7 @@ export const INSTRUCT_PRESETS: Record<string, InstructTemplate> = {
     first_input_sequence: '',
     last_input_sequence: '',
     names_force_groups: true,
-    name: 'ChatML',
+    name: 'chatml',
   },
 };
 
@@ -45,7 +45,7 @@ export const CONTEXT_PRESETS: Record<string, ContextTemplate> = {
     always_force_name2: true,
     trim_sentences: false,
     single_line: false,
-    name: 'ChatML',
+    name: 'chatml',
   },
 };
 
@@ -58,6 +58,7 @@ export const SYSTEM_PRESETS: Record<string, SystemPrompt> = {
 
 export const SAMPLER_PRESETS: Record<string, SamplerSettings> = {
   default: {
+    name: 'default',
     temp: 1,
     temperature_last: true,
     top_p: 0.9,
