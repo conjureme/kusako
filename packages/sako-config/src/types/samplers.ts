@@ -1,4 +1,5 @@
 export interface SamplerSettings {
+  name?: string;
   temp?: number;
   temperature_last?: boolean;
   top_p?: number;
