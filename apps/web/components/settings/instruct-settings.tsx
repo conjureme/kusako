@@ -26,10 +26,14 @@ export default function InstructSettings() {
     }
   }, []);
 
-  const handleTemplateSelect = (name: string) => {
+  const handleTemplateSelect = (
+    name: string,
+    templatesOverride?: Record<string, InstructTemplate>,
+  ) => {
+    const source = templatesOverride || templates;
     SakoConfig.setActiveInstruct(name);
     setActiveTemplate(name);
-    setCurrentTemplate(templates[name] || null);
+    setCurrentTemplate(source[name] || null);
   };
 
   const handleTemplateCreate = (name: string) => {
@@ -61,7 +65,7 @@ export default function InstructSettings() {
     SakoConfig.saveInstructTemplate(name, defaultTemplate);
     const updated = SakoConfig.getInstructTemplates();
     setTemplates(updated);
-    handleTemplateSelect(name);
+    handleTemplateSelect(name, updated);
   };
 
   const handleTemplateDelete = (name: string) => {
@@ -70,7 +74,7 @@ export default function InstructSettings() {
     setTemplates(updated);
     const remaining = Object.keys(updated);
     if (remaining.length > 0) {
-      handleTemplateSelect(remaining[0]!);
+      handleTemplateSelect(remaining[0]!, updated);
     } else {
       setActiveTemplate(null);
       setCurrentTemplate(null);
@@ -83,6 +87,7 @@ export default function InstructSettings() {
     setTemplates(updated);
     if (activeTemplate === oldName) {
       setActiveTemplate(newName);
+      setCurrentTemplate(updated[newName] || null);
     }
   };
 

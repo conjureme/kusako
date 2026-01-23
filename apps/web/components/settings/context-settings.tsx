@@ -26,10 +26,14 @@ export default function ContextSettings() {
     }
   }, []);
 
-  const handleTemplateSelect = (name: string) => {
+  const handleTemplateSelect = (
+    name: string,
+    templatesOverride?: Record<string, ContextTemplate>,
+  ) => {
+    const source = templatesOverride || templates;
     SakoConfig.setActiveContext(name);
     setActiveTemplate(name);
-    setCurrentTemplate(templates[name] || null);
+    setCurrentTemplate(source[name] || null);
   };
 
   const handleTemplateCreate = (name: string) => {
@@ -48,7 +52,7 @@ export default function ContextSettings() {
     SakoConfig.saveContextTemplate(name, defaultTemplate);
     const updated = SakoConfig.getContextTemplates();
     setTemplates(updated);
-    handleTemplateSelect(name);
+    handleTemplateSelect(name, updated);
   };
 
   const handleTemplateDelete = (name: string) => {
@@ -57,7 +61,7 @@ export default function ContextSettings() {
     setTemplates(updated);
     const remaining = Object.keys(updated);
     if (remaining.length > 0) {
-      handleTemplateSelect(remaining[0]!);
+      handleTemplateSelect(remaining[0]!, updated);
     } else {
       setActiveTemplate(null);
       setCurrentTemplate(null);
@@ -70,6 +74,7 @@ export default function ContextSettings() {
     setTemplates(updated);
     if (activeTemplate === oldName) {
       setActiveTemplate(newName);
+      setCurrentTemplate(updated[newName] || null);
     }
   };
 

@@ -155,10 +155,14 @@ export default function SamplerSettings() {
     }
   }, []);
 
-  const handleTemplateSelect = (name: string) => {
+  const handleTemplateSelect = (
+    name: string,
+    templatesOverride?: Record<string, SamplerSettingsType>,
+  ) => {
+    const source = templatesOverride || templates;
     SakoConfig.setActiveSampler(name);
     setActiveTemplate(name);
-    setCurrentTemplate(templates[name] || null);
+    setCurrentTemplate(source[name] || null);
   };
 
   const handleTemplateCreate = (name: string) => {
@@ -167,7 +171,7 @@ export default function SamplerSettings() {
       SakoConfig.saveSamplerTemplate(name, { ...defaultTemplate });
       const updated = SakoConfig.getSamplerTemplates();
       setTemplates(updated);
-      handleTemplateSelect(name);
+      handleTemplateSelect(name, updated);
     }
   };
 
@@ -177,7 +181,7 @@ export default function SamplerSettings() {
     setTemplates(updated);
     const remaining = Object.keys(updated);
     if (remaining.length > 0) {
-      handleTemplateSelect(remaining[0]!);
+      handleTemplateSelect(remaining[0]!, updated);
     } else {
       setActiveTemplate(null);
       setCurrentTemplate(null);
@@ -190,6 +194,7 @@ export default function SamplerSettings() {
     setTemplates(updated);
     if (activeTemplate === oldName) {
       setActiveTemplate(newName);
+      setCurrentTemplate(updated[newName] || null);
     }
   };
 

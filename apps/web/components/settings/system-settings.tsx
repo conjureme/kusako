@@ -25,10 +25,14 @@ export default function SystemSettings() {
     }
   }, []);
 
-  const handleTemplateSelect = (name: string) => {
+  const handleTemplateSelect = (
+    name: string,
+    templatesOverride?: Record<string, SystemPrompt>,
+  ) => {
+    const source = templatesOverride || templates;
     SakoConfig.setActiveSystem(name);
     setActiveTemplate(name);
-    setCurrentTemplate(templates[name] || null);
+    setCurrentTemplate(source[name] || null);
   };
 
   const handleTemplateCreate = (name: string) => {
@@ -39,7 +43,7 @@ export default function SystemSettings() {
     SakoConfig.saveSystemTemplate(name, defaultTemplate);
     const updated = SakoConfig.getSystemTemplates();
     setTemplates(updated);
-    handleTemplateSelect(name);
+    handleTemplateSelect(name, updated);
   };
 
   const handleTemplateDelete = (name: string) => {
@@ -48,7 +52,7 @@ export default function SystemSettings() {
     setTemplates(updated);
     const remaining = Object.keys(updated);
     if (remaining.length > 0) {
-      handleTemplateSelect(remaining[0]!);
+      handleTemplateSelect(remaining[0]!, updated);
     } else {
       setActiveTemplate(null);
       setCurrentTemplate(null);
@@ -61,6 +65,7 @@ export default function SystemSettings() {
     setTemplates(updated);
     if (activeTemplate === oldName) {
       setActiveTemplate(newName);
+      setCurrentTemplate(updated[newName] || null);
     }
   };
 
