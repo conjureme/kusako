@@ -13,6 +13,8 @@ interface TemplateSelectorProps {
   onSave: () => void;
   onRestore: () => void;
   isDirty: boolean;
+  onImport?: () => void;
+  onExport?: () => void;
 }
 
 type ModalMode = 'create' | 'rename' | 'delete' | null;
@@ -27,6 +29,8 @@ export default function TemplateSelector({
   onSave,
   onRestore,
   isDirty,
+  onImport,
+  onExport,
 }: TemplateSelectorProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
@@ -94,95 +98,122 @@ export default function TemplateSelector({
   };
 
   return (
-    <div className='flex items-center gap-2'>
-      <div className='relative' ref={dropdownRef}>
-        <button
-          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className='flex items-center gap-2 px-4 py-2.5 rounded-xl bg-base-200/50 border border-base-content/10 hover:border-base-content/20 hover:bg-base-200 transition-all text-sm min-w-40 cursor-pointer'
-        >
-          <span className='flex-1 text-left truncate'>
-            {activeTemplate || 'select template'}
-          </span>
-          {isDirty && (
-            <span
-              className='w-2 h-2 rounded-full bg-warning'
-              title='unsaved changes'
+    <div className='flex items-center justify-between'>
+      <div className='flex items-center gap-2'>
+        <div className='relative' ref={dropdownRef}>
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className='flex items-center gap-2 px-4 py-2.5 rounded-xl bg-base-200/50 border border-base-content/10 hover:border-base-content/20 hover:bg-base-200 transition-all text-sm min-w-40 cursor-pointer'
+          >
+            <span className='flex-1 text-left truncate'>
+              {activeTemplate || 'select template'}
+            </span>
+            {isDirty && (
+              <span
+                className='w-2 h-2 rounded-full bg-warning'
+                title='unsaved changes'
+              />
+            )}
+            <Icon
+              icon='material-symbols:expand-more'
+              className={`w-5 h-5 text-base-content/50 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
             />
-          )}
-          <Icon
-            icon='material-symbols:expand-more'
-            className={`w-5 h-5 text-base-content/50 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
-          />
-        </button>
+          </button>
 
-        {isDropdownOpen && (
-          <div className='absolute top-full left-0 mt-1 z-20 w-full min-w-48 py-1 bg-base-100 rounded-xl shadow-lg border border-base-content/10'>
-            {templates.map((name) => (
-              <button
-                key={name}
-                onClick={() => {
-                  onSelect(name);
-                  setIsDropdownOpen(false);
-                }}
-                className={`w-full px-4 py-2 text-sm text-left transition-colors cursor-pointer ${
-                  activeTemplate === name
-                    ? 'bg-primary/10 text-primary'
-                    : 'hover:bg-base-200 text-base-content'
-                }`}
-              >
-                {name}
-              </button>
-            ))}
-          </div>
-        )}
+          {isDropdownOpen && (
+            <div className='absolute top-full left-0 mt-1 z-20 w-full min-w-48 py-1 bg-base-100 rounded-xl shadow-lg border border-base-content/10'>
+              {templates.map((name) => (
+                <button
+                  key={name}
+                  onClick={() => {
+                    onSelect(name);
+                    setIsDropdownOpen(false);
+                  }}
+                  className={`w-full px-4 py-2 text-sm text-left transition-colors cursor-pointer ${
+                    activeTemplate === name
+                      ? 'bg-primary/10 text-primary'
+                      : 'hover:bg-base-200 text-base-content'
+                  }`}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className='flex items-center gap-1'>
+          <button
+            onClick={openCreateModal}
+            className='p-2 rounded-lg hover:bg-base-200 text-base-content/50 hover:text-base-content transition-colors cursor-pointer'
+            title='new template'
+          >
+            <Icon icon='material-symbols:add' className='w-4.5 h-4.5' />
+          </button>
+
+          <button
+            onClick={openRenameModal}
+            disabled={!activeTemplate}
+            className='p-2 rounded-lg hover:bg-base-200 text-base-content/50 hover:text-base-content transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed'
+            title='save as new template'
+          >
+            <Icon
+              icon='material-symbols:edit-outline'
+              className='w-4.5 h-4.5'
+            />
+          </button>
+
+          <button
+            onClick={onSave}
+            disabled={!isDirty}
+            className='p-2 rounded-lg hover:bg-success/10 text-base-content/50 hover:text-success transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed'
+            title='save changes'
+          >
+            <Icon
+              icon='material-symbols:save-outline'
+              className='w-4.5 h-4.5'
+            />
+          </button>
+
+          <button
+            onClick={onRestore}
+            disabled={!isDirty}
+            className='p-2 rounded-lg hover:bg-warning/10 text-base-content/50 hover:text-warning transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed'
+            title='restore to saved'
+          >
+            <Icon icon='material-symbols:restart-alt' className='w-4.5 h-4.5' />
+          </button>
+
+          <button
+            onClick={() => setModalMode('delete')}
+            disabled={!activeTemplate || templates.length <= 1}
+            className='p-2 rounded-lg hover:bg-error/10 text-base-content/50 hover:text-error transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed'
+            title='delete template'
+          >
+            <Icon
+              icon='material-symbols:delete-outline'
+              className='w-4.5 h-4.5'
+            />
+          </button>
+        </div>
       </div>
 
       <div className='flex items-center gap-1'>
         <button
-          onClick={openCreateModal}
+          onClick={onImport}
           className='p-2 rounded-lg hover:bg-base-200 text-base-content/50 hover:text-base-content transition-colors cursor-pointer'
-          title='new template'
+          title='import template'
         >
-          <Icon icon='material-symbols:add' className='w-4.5 h-4.5' />
+          <Icon icon='material-symbols:upload' className='w-4.5 h-4.5' />
         </button>
 
         <button
-          onClick={openRenameModal}
+          onClick={onExport}
           disabled={!activeTemplate}
           className='p-2 rounded-lg hover:bg-base-200 text-base-content/50 hover:text-base-content transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed'
-          title='save as new template'
+          title='export template'
         >
-          <Icon icon='material-symbols:edit-outline' className='w-4.5 h-4.5' />
-        </button>
-
-        <button
-          onClick={onSave}
-          disabled={!isDirty}
-          className='p-2 rounded-lg hover:bg-success/10 text-base-content/50 hover:text-success transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed'
-          title='save changes'
-        >
-          <Icon icon='material-symbols:save-outline' className='w-4.5 h-4.5' />
-        </button>
-
-        <button
-          onClick={onRestore}
-          disabled={!isDirty}
-          className='p-2 rounded-lg hover:bg-warning/10 text-base-content/50 hover:text-warning transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed'
-          title='restore to saved'
-        >
-          <Icon icon='material-symbols:restart-alt' className='w-4.5 h-4.5' />
-        </button>
-
-        <button
-          onClick={() => setModalMode('delete')}
-          disabled={!activeTemplate || templates.length <= 1}
-          className='p-2 rounded-lg hover:bg-error/10 text-base-content/50 hover:text-error transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed'
-          title='delete template'
-        >
-          <Icon
-            icon='material-symbols:delete-outline'
-            className='w-4.5 h-4.5'
-          />
+          <Icon icon='material-symbols:download' className='w-4.5 h-4.5' />
         </button>
       </div>
 

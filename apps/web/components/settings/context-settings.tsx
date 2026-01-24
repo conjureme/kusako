@@ -7,6 +7,7 @@ import * as SakoConfig from '@repo/sako-config';
 import type { ContextTemplate } from '@repo/sako-config';
 
 import TemplateSelector from './template-selector';
+import ImportExportModal from './import-export-modal';
 
 export default function ContextSettings() {
   const [templates, setTemplates] = useState<Record<string, ContextTemplate>>(
@@ -15,6 +16,9 @@ export default function ContextSettings() {
   const [currentTemplate, setCurrentTemplate] =
     useState<ContextTemplate | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+  const [importExportMode, setImportExportMode] = useState<
+    'import' | 'export' | null
+  >(null);
 
   const checkDirty = useCallback(() => {
     setIsDirty(SakoConfig.isContextDirty());
@@ -100,6 +104,10 @@ export default function ContextSettings() {
     }
   };
 
+  const handleImportComplete = () => {
+    setTemplates(SakoConfig.getContextTemplates());
+  };
+
   if (!currentTemplate) {
     return (
       <div className='py-12 text-center'>
@@ -126,7 +134,18 @@ export default function ContextSettings() {
         onSave={handleSave}
         onRestore={handleRestore}
         isDirty={isDirty}
+        onImport={() => setImportExportMode('import')}
+        onExport={() => setImportExportMode('export')}
       />
+
+      {importExportMode && (
+        <ImportExportModal
+          mode={importExportMode}
+          onClose={() => setImportExportMode(null)}
+          onImportComplete={handleImportComplete}
+          currentType='context'
+        />
+      )}
 
       <div className='space-y-5'>
         <div>

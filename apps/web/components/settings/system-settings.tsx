@@ -7,6 +7,7 @@ import * as SakoConfig from '@repo/sako-config';
 import type { SystemPrompt } from '@repo/sako-config';
 
 import TemplateSelector from './template-selector';
+import ImportExportModal from './import-export-modal';
 
 export default function SystemSettings() {
   const [templates, setTemplates] = useState<Record<string, SystemPrompt>>({});
@@ -14,6 +15,9 @@ export default function SystemSettings() {
     null,
   );
   const [isDirty, setIsDirty] = useState(false);
+  const [importExportMode, setImportExportMode] = useState<
+    'import' | 'export' | null
+  >(null);
 
   const checkDirty = useCallback(() => {
     setIsDirty(SakoConfig.isSystemDirty());
@@ -88,6 +92,10 @@ export default function SystemSettings() {
     }
   };
 
+  const handleImportComplete = () => {
+    setTemplates(SakoConfig.getSystemTemplates());
+  };
+
   if (!currentTemplate) {
     return (
       <div className='py-12 text-center'>
@@ -118,7 +126,18 @@ export default function SystemSettings() {
         onSave={handleSave}
         onRestore={handleRestore}
         isDirty={isDirty}
+        onImport={() => setImportExportMode('import')}
+        onExport={() => setImportExportMode('export')}
       />
+
+      {importExportMode && (
+        <ImportExportModal
+          mode={importExportMode}
+          onClose={() => setImportExportMode(null)}
+          onImportComplete={handleImportComplete}
+          currentType='sysprompt'
+        />
+      )}
 
       <div className='space-y-4'>
         <div className='relative'>

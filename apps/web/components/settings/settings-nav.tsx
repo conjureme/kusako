@@ -55,39 +55,39 @@ export default function SettingsNav({
     <nav className='w-64 shrink-0'>
       <div className='bg-base-100 rounded-2xl border border-base-content/5 p-3 shadow-sm'>
         <div className='space-y-1'>
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => onTabChange(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer group ${
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer group ${
+                activeTab === tab.id
+                  ? 'bg-primary/10 text-primary'
+                  : 'hover:bg-base-200 text-base-content/70 hover:text-base-content'
+              }`}
+            >
+              <div
+                className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
                   activeTab === tab.id
-                    ? 'bg-primary/10 text-primary'
-                    : 'hover:bg-base-200 text-base-content/70 hover:text-base-content'
+                    ? 'bg-primary/20'
+                    : 'bg-base-200 group-hover:bg-base-300'
                 }`}
               >
+                <Icon icon={tab.icon} className='w-5 h-5' />
+              </div>
+              <div className='text-left'>
+                <div className='font-medium text-sm'>{tab.label}</div>
                 <div
-                  className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+                  className={`text-xs ${
                     activeTab === tab.id
-                      ? 'bg-primary/20'
-                      : 'bg-base-200 group-hover:bg-base-300'
+                      ? 'text-primary/70'
+                      : 'text-base-content/50'
                   }`}
                 >
-                  <Icon icon={tab.icon} className='w-5 h-5' />
+                  {tab.description}
                 </div>
-                <div className='text-left'>
-                  <div className='font-medium text-sm'>{tab.label}</div>
-                  <div
-                    className={`text-xs ${
-                      activeTab === tab.id
-                        ? 'text-primary/70'
-                        : 'text-base-content/50'
-                    }`}
-                  >
-                    {tab.description}
-                  </div>
-                </div>
-              </button>
-            ))}
+              </div>
+            </button>
+          ))}
         </div>
       </div>
     </nav>

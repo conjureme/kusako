@@ -7,6 +7,7 @@ import * as SakoConfig from '@repo/sako-config';
 import type { InstructTemplate } from '@repo/sako-config';
 
 import TemplateSelector from './template-selector';
+import ImportExportModal from './import-export-modal';
 
 export default function InstructSettings() {
   const [templates, setTemplates] = useState<Record<string, InstructTemplate>>(
@@ -15,6 +16,9 @@ export default function InstructSettings() {
   const [currentTemplate, setCurrentTemplate] =
     useState<InstructTemplate | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+  const [importExportMode, setImportExportMode] = useState<
+    'import' | 'export' | null
+  >(null);
 
   const checkDirty = useCallback(() => {
     setIsDirty(SakoConfig.isInstructDirty());
@@ -116,6 +120,10 @@ export default function InstructSettings() {
     }
   };
 
+  const handleImportComplete = () => {
+    setTemplates(SakoConfig.getInstructTemplates());
+  };
+
   if (!currentTemplate) {
     return (
       <div className='py-12 text-center'>
@@ -142,7 +150,18 @@ export default function InstructSettings() {
         onSave={handleSave}
         onRestore={handleRestore}
         isDirty={isDirty}
+        onImport={() => setImportExportMode('import')}
+        onExport={() => setImportExportMode('export')}
       />
+
+      {importExportMode && (
+        <ImportExportModal
+          mode={importExportMode}
+          onClose={() => setImportExportMode(null)}
+          onImportComplete={handleImportComplete}
+          currentType='instruct'
+        />
+      )}
 
       <div className='space-y-6'>
         <div className='p-4 rounded-xl bg-base-200/30 border border-base-content/5'>

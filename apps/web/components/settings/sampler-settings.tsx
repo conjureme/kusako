@@ -7,6 +7,7 @@ import * as SakoConfig from '@repo/sako-config';
 import type { SamplerSettings as SamplerSettingsType } from '@repo/sako-config';
 
 import TemplateSelector from './template-selector';
+import ImportExportModal from './import-export-modal';
 
 const RANGES: Record<string, { min: number; max: number; step: number }> = {
   temp: { min: 0, max: 5, step: 0.01 },
@@ -132,6 +133,9 @@ export default function SamplerSettings() {
   const [currentTemplate, setCurrentTemplate] =
     useState<SamplerSettingsType | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+  const [importExportMode, setImportExportMode] = useState<
+    'import' | 'export' | null
+  >(null);
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>
   >({
@@ -224,6 +228,10 @@ export default function SamplerSettings() {
     }
   };
 
+  const handleImportComplete = () => {
+    setTemplates(SakoConfig.getSamplerTemplates());
+  };
+
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
@@ -254,7 +262,18 @@ export default function SamplerSettings() {
         onSave={handleSave}
         onRestore={handleRestore}
         isDirty={isDirty}
+        onImport={() => setImportExportMode('import')}
+        onExport={() => setImportExportMode('export')}
       />
+
+      {importExportMode && (
+        <ImportExportModal
+          mode={importExportMode}
+          onClose={() => setImportExportMode(null)}
+          onImportComplete={handleImportComplete}
+          currentType='preset'
+        />
+      )}
 
       <div className='space-y-3'>
         <CollapsibleSection
