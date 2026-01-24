@@ -116,15 +116,6 @@ export default function ContextSettings() {
 
   return (
     <div className='space-y-6'>
-      <div>
-        <h2 className='text-lg font-semibold text-base-content mb-1'>
-          context template
-        </h2>
-        <p className='text-sm text-base-content/60'>
-          define how context is structured for the AI
-        </p>
-      </div>
-
       <TemplateSelector
         templates={Object.keys(templates)}
         activeTemplate={currentTemplate.name || null}

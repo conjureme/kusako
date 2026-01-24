@@ -132,15 +132,6 @@ export default function InstructSettings() {
 
   return (
     <div className='space-y-6'>
-      <div>
-        <h2 className='text-lg font-semibold text-base-content mb-1'>
-          instruct template
-        </h2>
-        <p className='text-sm text-base-content/60'>
-          configure the instruct format for chat messages
-        </p>
-      </div>
-
       <TemplateSelector
         templates={Object.keys(templates)}
         activeTemplate={currentTemplate.name || null}

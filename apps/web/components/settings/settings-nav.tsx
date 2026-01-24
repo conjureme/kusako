@@ -53,14 +53,13 @@ export default function SettingsNav({
 }: SettingsNavProps) {
   return (
     <nav className='w-64 shrink-0'>
-      <div className='sticky top-24'>
-        <div className='bg-base-100 rounded-2xl border border-base-content/5 p-3 shadow-sm'>
-          <div className='space-y-1'>
+      <div className='bg-base-100 rounded-2xl border border-base-content/5 p-3 shadow-sm'>
+        <div className='space-y-1'>
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer group ${
                   activeTab === tab.id
                     ? 'bg-primary/10 text-primary'
                     : 'hover:bg-base-200 text-base-content/70 hover:text-base-content'
@@ -89,23 +88,6 @@ export default function SettingsNav({
                 </div>
               </button>
             ))}
-          </div>
-        </div>
-
-        <div className='mt-4 p-4 bg-accent/10 rounded-2xl border border-accent/20'>
-          <div className='flex items-start gap-3'>
-            <div className='w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center shrink-0'>
-              <Icon
-                icon='material-symbols:lightbulb-outline'
-                className='w-4 h-4 text-accent-content'
-              />
-            </div>
-            <div>
-              <p className='text-xs text-base-content/70 leading-relaxed'>
-                changes are saved automatically to your browser's local storage
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </nav>

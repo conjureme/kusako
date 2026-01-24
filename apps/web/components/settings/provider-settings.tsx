@@ -48,20 +48,11 @@ export default function ProviderSettings() {
   };
 
   return (
-    <div className='space-y-8'>
-      <div>
-        <h2 className='text-lg font-semibold text-base-content mb-1'>
-          provider configuration
-        </h2>
-        <p className='text-sm text-base-content/60'>
-          connect kusako to your preferred AI backend
-        </p>
-      </div>
-
+    <div className='space-y-6'>
       <div className='grid grid-cols-2 gap-4'>
         <button
           onClick={() => handleProviderSelect('koboldcpp')}
-          className={`relative p-5 rounded-xl border-2 transition-all duration-200 text-left group ${
+          className={`relative p-5 rounded-xl border-2 transition-all duration-200 text-left cursor-pointer group ${
             activeProvider === 'koboldcpp'
               ? 'border-primary bg-primary/5'
               : 'border-base-content/10 hover:border-base-content/20 hover:bg-base-200/50'
@@ -83,7 +74,7 @@ export default function ProviderSettings() {
               className='w-5 h-5 text-base-content/70'
             />
           </div>
-          <div className='font-medium text-base-content'>KoboldCpp</div>
+          <div className='font-medium text-base-content'>koboldcpp</div>
           <div className='text-xs text-base-content/50 mt-1'>
             local inference server
           </div>
@@ -91,7 +82,7 @@ export default function ProviderSettings() {
 
         <button
           onClick={() => handleProviderSelect('claude')}
-          className={`relative p-5 rounded-xl border-2 transition-all duration-200 text-left group ${
+          className={`relative p-5 rounded-xl border-2 transition-all duration-200 text-left cursor-pointer group ${
             activeProvider === 'claude'
               ? 'border-primary bg-primary/5'
               : 'border-base-content/10 hover:border-base-content/20 hover:bg-base-200/50'
@@ -123,7 +114,7 @@ export default function ProviderSettings() {
           <div className='flex items-center gap-2 mb-4'>
             <div className='w-2 h-2 rounded-full bg-primary animate-pulse' />
             <span className='text-sm font-medium text-base-content'>
-              KoboldCpp settings
+              koboldcpp settings
             </span>
           </div>
 
@@ -139,7 +130,7 @@ export default function ProviderSettings() {
               className='w-full px-4 py-3 rounded-xl bg-base-200/50 border border-base-content/10 focus:border-primary focus:bg-base-100 outline-none transition-all text-sm font-mono'
             />
             <p className='text-xs text-base-content/50 mt-2'>
-              enter your KoboldCpp server address
+              enter your koboldcpp server address
             </p>
           </div>
 
@@ -158,7 +149,7 @@ export default function ProviderSettings() {
               <button
                 type='button'
                 onClick={() => setShowApiKey(!showApiKey)}
-                className='absolute right-3 top-1/2 -translate-y-1/2 p-1 text-base-content/40 hover:text-base-content/70 transition-colors'
+                className='absolute right-3 top-1/2 -translate-y-1/2 p-1 text-base-content/40 hover:text-base-content/70 transition-colors cursor-pointer'
               >
                 <Icon
                   icon={
@@ -198,7 +189,7 @@ export default function ProviderSettings() {
               <button
                 type='button'
                 onClick={() => setShowApiKey(!showApiKey)}
-                className='absolute right-3 top-1/2 -translate-y-1/2 p-1 text-base-content/40 hover:text-base-content/70 transition-colors'
+                className='absolute right-3 top-1/2 -translate-y-1/2 p-1 text-base-content/40 hover:text-base-content/70 transition-colors cursor-pointer'
               >
                 <Icon
                   icon={

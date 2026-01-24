@@ -98,7 +98,7 @@ export default function TemplateSelector({
       <div className='relative' ref={dropdownRef}>
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className='flex items-center gap-2 px-4 py-2.5 rounded-xl bg-base-200/50 border border-base-content/10 hover:border-base-content/20 hover:bg-base-200 transition-all text-sm min-w-40'
+          className='flex items-center gap-2 px-4 py-2.5 rounded-xl bg-base-200/50 border border-base-content/10 hover:border-base-content/20 hover:bg-base-200 transition-all text-sm min-w-40 cursor-pointer'
         >
           <span className='flex-1 text-left truncate'>
             {activeTemplate || 'select template'}
@@ -124,7 +124,7 @@ export default function TemplateSelector({
                   onSelect(name);
                   setIsDropdownOpen(false);
                 }}
-                className={`w-full px-4 py-2 text-sm text-left transition-colors ${
+                className={`w-full px-4 py-2 text-sm text-left transition-colors cursor-pointer ${
                   activeTemplate === name
                     ? 'bg-primary/10 text-primary'
                     : 'hover:bg-base-200 text-base-content'
@@ -140,7 +140,7 @@ export default function TemplateSelector({
       <div className='flex items-center gap-1'>
         <button
           onClick={openCreateModal}
-          className='p-2 rounded-lg hover:bg-base-200 text-base-content/50 hover:text-base-content transition-colors'
+          className='p-2 rounded-lg hover:bg-base-200 text-base-content/50 hover:text-base-content transition-colors cursor-pointer'
           title='new template'
         >
           <Icon icon='material-symbols:add' className='w-4.5 h-4.5' />
@@ -149,7 +149,7 @@ export default function TemplateSelector({
         <button
           onClick={openRenameModal}
           disabled={!activeTemplate}
-          className='p-2 rounded-lg hover:bg-base-200 text-base-content/50 hover:text-base-content transition-colors disabled:opacity-30 disabled:cursor-not-allowed'
+          className='p-2 rounded-lg hover:bg-base-200 text-base-content/50 hover:text-base-content transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed'
           title='save as new template'
         >
           <Icon icon='material-symbols:edit-outline' className='w-4.5 h-4.5' />
@@ -158,7 +158,7 @@ export default function TemplateSelector({
         <button
           onClick={onSave}
           disabled={!isDirty}
-          className='p-2 rounded-lg hover:bg-success/10 text-base-content/50 hover:text-success transition-colors disabled:opacity-30 disabled:cursor-not-allowed'
+          className='p-2 rounded-lg hover:bg-success/10 text-base-content/50 hover:text-success transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed'
           title='save changes'
         >
           <Icon icon='material-symbols:save-outline' className='w-4.5 h-4.5' />
@@ -167,7 +167,7 @@ export default function TemplateSelector({
         <button
           onClick={onRestore}
           disabled={!isDirty}
-          className='p-2 rounded-lg hover:bg-warning/10 text-base-content/50 hover:text-warning transition-colors disabled:opacity-30 disabled:cursor-not-allowed'
+          className='p-2 rounded-lg hover:bg-warning/10 text-base-content/50 hover:text-warning transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed'
           title='restore to saved'
         >
           <Icon icon='material-symbols:restart-alt' className='w-4.5 h-4.5' />
@@ -176,7 +176,7 @@ export default function TemplateSelector({
         <button
           onClick={() => setModalMode('delete')}
           disabled={!activeTemplate || templates.length <= 1}
-          className='p-2 rounded-lg hover:bg-error/10 text-base-content/50 hover:text-error transition-colors disabled:opacity-30 disabled:cursor-not-allowed'
+          className='p-2 rounded-lg hover:bg-error/10 text-base-content/50 hover:text-error transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed'
           title='delete template'
         >
           <Icon

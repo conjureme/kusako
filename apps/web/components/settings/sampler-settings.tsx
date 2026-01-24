@@ -171,7 +171,10 @@ export default function SamplerSettings() {
   const handleTemplateCreate = (name: string) => {
     const defaultTemplate = SakoConfig.getSamplerTemplates()['default'];
     if (defaultTemplate) {
-      const newTemplate = SakoConfig.createSamplerTemplate(name, defaultTemplate);
+      const newTemplate = SakoConfig.createSamplerTemplate(
+        name,
+        defaultTemplate,
+      );
       setTemplates(SakoConfig.getSamplerTemplates());
       setCurrentTemplate(newTemplate);
       checkDirty();
@@ -241,15 +244,6 @@ export default function SamplerSettings() {
 
   return (
     <div className='space-y-6'>
-      <div>
-        <h2 className='text-lg font-semibold text-base-content mb-1'>
-          sampler settings
-        </h2>
-        <p className='text-sm text-base-content/60'>
-          fine-tune generation parameters for your AI
-        </p>
-      </div>
-
       <TemplateSelector
         templates={Object.keys(templates)}
         activeTemplate={currentTemplate.name || null}
@@ -266,7 +260,7 @@ export default function SamplerSettings() {
         <CollapsibleSection
           title='basic sampling'
           icon='material-symbols:scatter-plot'
-          expanded={expandedSections.basic}
+          expanded={expandedSections.basic ?? false}
           onToggle={() => toggleSection('basic')}
         >
           <div className='grid grid-cols-2 lg:grid-cols-3 gap-6'>
@@ -318,7 +312,7 @@ export default function SamplerSettings() {
         <CollapsibleSection
           title='repetition penalties'
           icon='material-symbols:block'
-          expanded={expandedSections.penalties}
+          expanded={expandedSections.penalties ?? false}
           onToggle={() => toggleSection('penalties')}
         >
           <div className='grid grid-cols-2 lg:grid-cols-3 gap-6'>
@@ -358,7 +352,7 @@ export default function SamplerSettings() {
         <CollapsibleSection
           title='dynamic temperature'
           icon='material-symbols:thermostat'
-          expanded={expandedSections.dynamic}
+          expanded={expandedSections.dynamic ?? false}
           onToggle={() => toggleSection('dynamic')}
         >
           <div className='mb-4'>
@@ -394,7 +388,7 @@ export default function SamplerSettings() {
         <CollapsibleSection
           title='dry sampler'
           icon='material-symbols:humidity-low'
-          expanded={expandedSections.dry}
+          expanded={expandedSections.dry ?? false}
           onToggle={() => toggleSection('dry')}
         >
           <div className='grid grid-cols-2 gap-6 mb-6'>
@@ -441,7 +435,7 @@ export default function SamplerSettings() {
         <CollapsibleSection
           title='mirostat'
           icon='material-symbols:auto-fix-high'
-          expanded={expandedSections.mirostat}
+          expanded={expandedSections.mirostat ?? false}
           onToggle={() => toggleSection('mirostat')}
         >
           <div className='grid grid-cols-3 gap-6'>
@@ -469,7 +463,7 @@ export default function SamplerSettings() {
         <CollapsibleSection
           title='xtc sampler'
           icon='material-symbols:science'
-          expanded={expandedSections.xtc}
+          expanded={expandedSections.xtc ?? false}
           onToggle={() => toggleSection('xtc')}
         >
           <div className='grid grid-cols-2 gap-6'>
@@ -491,7 +485,7 @@ export default function SamplerSettings() {
         <CollapsibleSection
           title='generation settings'
           icon='material-symbols:text-fields'
-          expanded={expandedSections.generation}
+          expanded={expandedSections.generation ?? false}
           onToggle={() => toggleSection('generation')}
         >
           <div className='grid grid-cols-2 gap-6'>
@@ -513,7 +507,7 @@ export default function SamplerSettings() {
         <CollapsibleSection
           title='token settings'
           icon='material-symbols:token'
-          expanded={expandedSections.tokens}
+          expanded={expandedSections.tokens ?? false}
           onToggle={() => toggleSection('tokens')}
         >
           <div className='grid grid-cols-2 gap-1'>
@@ -579,7 +573,7 @@ function CollapsibleSection({
     <div className='rounded-xl border border-base-content/5 overflow-hidden'>
       <button
         onClick={onToggle}
-        className='w-full flex items-center justify-between px-4 py-3 bg-base-200/30 hover:bg-base-200/50 transition-colors'
+        className='w-full flex items-center justify-between px-4 py-3 bg-base-200/30 hover:bg-base-200/50 transition-colors cursor-pointer'
       >
         <div className='flex items-center gap-3'>
           <Icon icon={icon} className='w-5 h-5 text-base-content/50' />
