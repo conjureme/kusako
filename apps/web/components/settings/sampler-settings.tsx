@@ -173,16 +173,11 @@ export default function SamplerSettings() {
   };
 
   const handleTemplateCreate = (name: string) => {
-    const defaultTemplate = SakoConfig.getSamplerTemplates()['default'];
-    if (defaultTemplate) {
-      const newTemplate = SakoConfig.createSamplerTemplate(
-        name,
-        defaultTemplate,
-      );
-      setTemplates(SakoConfig.getSamplerTemplates());
-      setCurrentTemplate(newTemplate);
-      checkDirty();
-    }
+    if (!currentTemplate) return;
+    const newTemplate = SakoConfig.createSamplerTemplate(name, currentTemplate);
+    setTemplates(SakoConfig.getSamplerTemplates());
+    setCurrentTemplate(newTemplate);
+    checkDirty();
   };
 
   const handleTemplateDelete = (name: string) => {

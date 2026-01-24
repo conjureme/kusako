@@ -43,19 +43,8 @@ export default function ContextSettings() {
   };
 
   const handleTemplateCreate = (name: string) => {
-    const defaultTemplate: ContextTemplate = {
-      story_string: '',
-      example_separator: '',
-      chat_start: '',
-      use_stop_strings: false,
-      allow_jailbreak: false,
-      names_as_stop_strings: false,
-      always_force_name2: false,
-      trim_sentences: false,
-      single_line: false,
-      name: name,
-    };
-    const newTemplate = SakoConfig.createContextTemplate(name, defaultTemplate);
+    if (!currentTemplate) return;
+    const newTemplate = SakoConfig.createContextTemplate(name, currentTemplate);
     setTemplates(SakoConfig.getContextTemplates());
     setCurrentTemplate(newTemplate);
     checkDirty();

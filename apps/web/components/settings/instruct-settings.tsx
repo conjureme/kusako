@@ -43,34 +43,10 @@ export default function InstructSettings() {
   };
 
   const handleTemplateCreate = (name: string) => {
-    const defaultTemplate: InstructTemplate = {
-      input_sequence: '',
-      output_sequence: '',
-      last_output_sequence: '',
-      system_sequence: '',
-      stop_sequence: '',
-      wrap: false,
-      macro: false,
-      names_behavior: 'never',
-      activation_regex: '',
-      system_sequence_prefix: '',
-      system_sequence_suffix: '',
-      first_output_sequence: '',
-      skip_examples: false,
-      output_suffix: '',
-      input_suffix: '',
-      system_suffix: '',
-      user_alignment_message: '',
-      system_same_as_user: false,
-      last_system_sequence: '',
-      first_input_sequence: '',
-      last_input_sequence: '',
-      names_force_groups: false,
-      name: name,
-    };
+    if (!currentTemplate) return;
     const newTemplate = SakoConfig.createInstructTemplate(
       name,
-      defaultTemplate,
+      currentTemplate,
     );
     setTemplates(SakoConfig.getInstructTemplates());
     setCurrentTemplate(newTemplate);

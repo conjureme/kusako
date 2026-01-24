@@ -42,11 +42,8 @@ export default function SystemSettings() {
   };
 
   const handleTemplateCreate = (name: string) => {
-    const defaultTemplate: SystemPrompt = {
-      name: name,
-      content: '',
-    };
-    const newTemplate = SakoConfig.createSystemTemplate(name, defaultTemplate);
+    if (!currentTemplate) return;
+    const newTemplate = SakoConfig.createSystemTemplate(name, currentTemplate);
     setTemplates(SakoConfig.getSystemTemplates());
     setCurrentTemplate(newTemplate);
     checkDirty();
