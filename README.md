@@ -1,58 +1,66 @@
-# Turborepo Tailwind CSS starter
+<div align="center">
+  <!-- <img src="https://github.com/user-attachments/assets/db6fb2fc-f917-4bd5-801f-7a8994ac22a0" alt="kusako logo" width="200"> -->
+  <h1>kusako</h1>
+  <p><strong>highly customizable frontend to bring your own characters and models to create interactive characters that can speak, play games, and stream!</strong></p>
+  <p>
+    <img src="https://img.shields.io/badge/Turborepo-110f12?style=flat&logo=turborepo" alt="Turborepo Badge">
+    <img src="https://img.shields.io/badge/TypeScript-5.0%2B-d5f9ff?style=flat&labelColor=110f12&logo=typescript" alt="TypeScript Badge">
+    <img src="https://img.shields.io/badge/license-MIT-d5f9ff?style=flat&labelColor=110f12&" alt="License Badge">
+  </p>
+  <p>
+    <a href="https://discord.gg/rn9j69ApJQ"><img src="https://img.shields.io/discord/1310128789887389716?logo=discord&logoColor=white&color=5865F2&labelColor=110f12" alt="Discord"></a>
+  </p>
+</div>
 
-This Turborepo starter is maintained by the Turborepo core team.
+> [!NOTE]
+>
+> kusako is still very early in development. the [discord module](https://github.com/conjureme/kusako-discord) is the most mature, while this monorepo is actively being built.
 
-## Using this example
+kusako is a monorepo (and character) for creating interactive AI characters that can use audio, chat on discord, stream on twitch, and more. it's essentially a self-hosted alternative to [character.ai](https://character.ai/) or xAI's "[Companions](<https://en.wikipedia.org/wiki/Grok_(chatbot)#Grok_4>)", but you get to choose your own models, your own providers, and your own settings.
 
-Run the following command:
+while there are a lot of great platforms to interact with text generation LLMs, like the goat [SillyTavern](https://github.com/SillyTavern/SillyTavern), kusako aims to take interactivity to the next level by adding voice, custom 2D avatars, the ability to play games or join discord calls, and more, all while staying true to the local-first ideology.
 
-```sh
-npx create-turbo@latest -e with-tailwind
-```
+### sako's vision
 
-## What's inside?
+1. ALWAYS local-first. your data stays on your device through your browser. there are no accounts, no cloud storage, and no subscriptions. chat history, character cards, avatar models, API keys, etc. are all stored in your browser or on your device.
+2. "bring your own everything." kusako won't lock you into any provider, model, or service. you can choose to use local inference through a provider like [KoboldCPP](https://github.com/KoboldAI/KoboldCpp), connect to OpenRouter, or use beefy LLMs like [Claude](https://claude.ai).
+3. kusako and everything it entails is a passion project, it's free and open source, and always will be!
 
-This Turborepo includes the following packages/apps:
+## roadmap
 
-### Apps and Packages
+### `@kusako/web`
 
-- `docs`: a [Next.js](https://nextjs.org/) app with [Tailwind CSS](https://tailwindcss.com/)
-- `web`: another [Next.js](https://nextjs.org/) app with [Tailwind CSS](https://tailwindcss.com/)
-- `ui`: a stub React component library with [Tailwind CSS](https://tailwindcss.com/) shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+- [x] settings/config
+  - [x] providers configuration
+  - [x] text completion settings
+  - [x] template create/save/load/delete
+    - [x] SillyTavern compatibility
+  - [ ] additional provider support
+- [ ] chat interface
+  - [ ] character cards
+  - [ ] lorebooks
+- [ ] character stage
+  - [ ] Live2D avatar display
+  - [ ] idle animations
+  - [ ] streaming mode
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+### `@kusako/discord`
 
-### Building packages/ui
+- [ ] full module integration
+  - [ ] API support
+  - [ ] function calling (send DMs, update status, join voice, etc.)
+  - [ ] autoresponders
+  - [ ] economy system and minigames
+  - [ ] voice channel support
 
-This example is set up to produce compiled styles for `ui` components into the `dist` directory. The component `.tsx` files are consumed by the Next.js apps directly using `transpilePackages` in `next.config.ts`. This was chosen for several reasons:
+### avatar/model support
 
-- Make sharing one `tailwind.config.ts` to apps and packages as easy as possible.
-- Make package compilation simple by only depending on the Next.js Compiler and `tailwindcss`.
-- Ensure Tailwind classes do not overwrite each other. The `ui` package uses a `ui-` prefix for it's classes.
-- Maintain clear package export boundaries.
+- [ ] Live2D model loading and rendering
+- [ ] VRM model support
+- [ ] model storage
 
-Another option is to consume `packages/ui` directly from source without building. If using this option, you will need to update the `tailwind.config.ts` in your apps to be aware of your package locations, so it can find all usages of the `tailwindcss` class names for CSS compilation.
+### audio
 
-For example, in [tailwind.config.ts](packages/tailwind-config/tailwind.config.ts):
-
-```js
-  content: [
-    // app content
-    `src/**/*.{js,ts,jsx,tsx}`,
-    // include packages if not transpiling
-    "../../packages/ui/*.{js,ts,jsx,tsx}",
-  ],
-```
-
-If you choose this strategy, you can remove the `tailwindcss` and `autoprefixer` dependencies from the `ui` package.
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [Tailwind CSS](https://tailwindcss.com/) for styles
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+- [ ] TTS integration
+- [ ] STT input
+- [ ] voice conversion
