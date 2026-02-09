@@ -19,3 +19,10 @@ export type {
   SystemPrompt,
   Templates,
 } from './templates';
+
+export type {
+  CharacterBookEntry,
+  CharacterBook,
+  CharacterCardData,
+  CharacterCard,
+} from './characters';
