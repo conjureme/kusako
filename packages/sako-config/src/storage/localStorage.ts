@@ -5,12 +5,14 @@ import type {
   SystemPrompt,
 } from '../types/templates';
 import type { SamplerSettings } from '../types/samplers';
+import type { CharacterCard, CharacterCardData } from '../types/characters';
 
 import {
   CONTEXT_PRESETS,
   INSTRUCT_PRESETS,
   SYSTEM_PRESETS,
   SAMPLER_PRESETS,
+  CHARACTER_PRESETS,
 } from '../schemas/presets';
 
 const STORAGE_KEY = 'kusako_providers';
@@ -21,10 +23,13 @@ const INSTRUCT_TEMPLATES_KEY = 'kusako_instruct_templates';
 const SYSTEM_TEMPLATES_KEY = 'kusako_system_templates';
 const SAMPLER_TEMPLATES_KEY = 'kusako_sampler_templates';
 
+const CHARACTER_CARDS_KEY = 'kusako_character_cards';
+
 const ACTIVE_CONTEXT_KEY = 'kusako_active_context';
 const ACTIVE_INSTRUCT_KEY = 'kusako_active_instruct';
 const ACTIVE_SYSTEM_KEY = 'kusako_active_system';
 const ACTIVE_SAMPLER_KEY = 'kusako_active_sampler';
+const ACTIVE_CHARACTER_KEY = 'kusako_active_character';
 
 const DEFAULT_PROVIDERS: ProvidersConfig = {
   koboldcpp: { baseUrl: '', apiKey: '' },
@@ -700,4 +705,150 @@ export function isSamplerDirty(): boolean {
   const savedWithName = { ...saved, name: active.name };
 
   return JSON.stringify(activeWithoutName) !== JSON.stringify(savedWithName);
+}
+
+export function getCharacterCards(): Record<string, CharacterCard> {
+  if (typeof window === 'undefined') return CHARACTER_PRESETS;
+
+  const stored = localStorage.getItem(CHARACTER_CARDS_KEY);
+  if (!stored) {
+    localStorage.setItem(
+      CHARACTER_CARDS_KEY,
+      JSON.stringify(CHARACTER_PRESETS),
+    );
+    return CHARACTER_PRESETS;
+  }
+
+  try {
+    return JSON.parse(stored);
+  } catch {
+    localStorage.setItem(
+      CHARACTER_CARDS_KEY,
+      JSON.stringify(CHARACTER_PRESETS),
+    );
+    return CHARACTER_PRESETS;
+  }
+}
+
+export function getActiveCharacter(): CharacterCard | null {
+  if (typeof window === 'undefined') return null;
+
+  const stored = localStorage.getItem(ACTIVE_CHARACTER_KEY);
+  if (!stored) {
+    const cards = getCharacterCards();
+    const defaultCard = cards['blank'];
+    if (defaultCard) {
+      localStorage.setItem(ACTIVE_CHARACTER_KEY, JSON.stringify(defaultCard));
+      return defaultCard;
+    }
+    return null;
+  }
+
+  try {
+    return JSON.parse(stored);
+  } catch {
+    const cards = getCharacterCards();
+    const defaultCard = cards['blank'];
+    if (defaultCard) {
+      localStorage.setItem(ACTIVE_CHARACTER_KEY, JSON.stringify(defaultCard));
+      return defaultCard;
+    }
+    return null;
+  }
+}
+
+export function setActiveCharacter(card: CharacterCard | null): void {
+  if (typeof window === 'undefined') return;
+
+  if (card === null) {
+    localStorage.removeItem(ACTIVE_CHARACTER_KEY);
+  } else {
+    localStorage.setItem(ACTIVE_CHARACTER_KEY, JSON.stringify(card));
+  }
+}
+
+export function updateActiveCharacter(
+  updates: Partial<CharacterCardData>,
+): CharacterCard | null {
+  const current = getActiveCharacter();
+  if (!current) return null;
+
+  const updated = { ...current, data: { ...current.data, ...updates } };
+  setActiveCharacter(updated);
+  return updated;
+}
+
+export function saveCharacterCard(name: string, card: CharacterCard): void {
+  if (typeof window === 'undefined') return;
+  const cards = getCharacterCards();
+  cards[name] = { ...card, data: { ...card.data, name } };
+  localStorage.setItem(CHARACTER_CARDS_KEY, JSON.stringify(cards));
+}
+
+export function commitActiveCharacter(): void {
+  const active = getActiveCharacter();
+  if (!active) return;
+  saveCharacterCard(active.data.name, active);
+}
+
+export function restoreActiveCharacter(): CharacterCard | null {
+  const active = getActiveCharacter();
+  if (!active) return null;
+
+  const cards = getCharacterCards();
+  const saved = cards[active.data.name];
+  if (saved) {
+    setActiveCharacter(saved);
+    return saved;
+  }
+  return null;
+}
+
+export function deleteCharacterCard(name: string): void {
+  if (typeof window === 'undefined') return;
+  const cards = getCharacterCards();
+  delete cards[name];
+  localStorage.setItem(CHARACTER_CARDS_KEY, JSON.stringify(cards));
+
+  const active = getActiveCharacter();
+  if (active?.data.name === name) {
+    const remaining = Object.keys(cards);
+    if (remaining.length > 0) {
+      const next = cards[remaining[0]!];
+      if (next) setActiveCharacter(next);
+    } else {
+      setActiveCharacter(null);
+    }
+  }
+}
+
+export function createCharacterCard(
+  name: string,
+  card: CharacterCard,
+): CharacterCard {
+  const newCard = { ...card, data: { ...card.data, name } };
+  saveCharacterCard(name, newCard);
+  setActiveCharacter(newCard);
+  return newCard;
+}
+
+export function renameCharacterCard(newName: string): CharacterCard | null {
+  const active = getActiveCharacter();
+  if (!active) return null;
+
+  const newCard = { ...active, data: { ...active.data, name: newName } };
+  saveCharacterCard(newName, newCard);
+  setActiveCharacter(newCard);
+  return newCard;
+}
+
+export function isCharacterDirty(): boolean {
+  const active = getActiveCharacter();
+  if (!active) return false;
+
+  const cards = getCharacterCards();
+  const saved = cards[active.data.name];
+  if (!saved) return true;
+
+  return JSON.stringify(active) !== JSON.stringify(saved);
 }
