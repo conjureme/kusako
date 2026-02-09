@@ -9,8 +9,15 @@ import SamplerSettings from '../../components/settings/sampler-settings';
 import ContextSettings from '../../components/settings/context-settings';
 import InstructSettings from '../../components/settings/instruct-settings';
 import SystemSettings from '../../components/settings/system-settings';
+import CharacterSettings from '../../components/settings/character-settings';
 
-type SettingsTab = 'provider' | 'samplers' | 'context' | 'instruct' | 'system';
+type SettingsTab =
+  | 'provider'
+  | 'samplers'
+  | 'context'
+  | 'instruct'
+  | 'system'
+  | 'character';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('provider');
@@ -27,6 +34,8 @@ export default function SettingsPage() {
         return <InstructSettings />;
       case 'system':
         return <SystemSettings />;
+      case 'character':
+        return <CharacterSettings />;
       default:
         return <ProviderSettings />;
     }
