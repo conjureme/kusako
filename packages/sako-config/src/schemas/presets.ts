@@ -4,6 +4,7 @@ import type {
   SystemPrompt,
 } from '../types/templates';
 import type { SamplerSettings } from '../types/samplers';
+import type { CharacterCard } from '../types/characters';
 
 export const INSTRUCT_PRESETS: Record<string, InstructTemplate> = {
   chatml: {
@@ -165,5 +166,28 @@ export const SAMPLER_PRESETS: Record<string, SamplerSettings> = {
     rep_pen_size: 0,
     genamt: 1024,
     max_length: 12800,
+  },
+};
+
+export const CHARACTER_PRESETS: Record<string, CharacterCard> = {
+  blank: {
+    spec: 'chara_card_v2',
+    spec_version: '2.0',
+    data: {
+      name: 'blank',
+      description: '',
+      personality: '',
+      scenario: '',
+      first_mes: '',
+      mes_example: '',
+      creator_notes: '',
+      system_prompt: '',
+      post_history_instructions: '',
+      alternate_greetings: [],
+      tags: [],
+      creator: '',
+      character_version: '',
+      extensions: {},
+    },
   },
 };
