@@ -59,7 +59,8 @@ export async function extractCharacterFromPng(
 
         if (keyword.toLowerCase() === 'chara') {
           const base64 = decoder.decode(chunkData.slice(nullIndex + 1));
-          const json = atob(base64);
+          const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+          const json = new TextDecoder().decode(bytes);
           return JSON.parse(json) as CharacterCard;
         }
       }
@@ -80,7 +81,12 @@ export async function encodeCharacterToPng(
   const data = new Uint8Array(buffer);
 
   const json = JSON.stringify(card);
-  const base64 = btoa(unescape(encodeURIComponent(json)));
+  const jsonBytes = new TextEncoder().encode(json);
+  let binary = '';
+  for (let i = 0; i < jsonBytes.length; i++) {
+    binary += String.fromCharCode(jsonBytes[i]!);
+  }
+  const base64 = btoa(binary);
   const keyword = encoder.encode('chara');
   const value = encoder.encode(base64);
 
