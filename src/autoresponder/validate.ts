@@ -84,6 +84,7 @@ export function validateTemplate(nodes: Node[]): string[] {
   let embedTags = 0;
   let roleTags = 0;
   let buttons = 0;
+  let errorTags = 0;
 
   for (const node of nodes) {
     if (node.kind === 'capture-ref') {
@@ -189,6 +190,17 @@ export function validateTemplate(nodes: Node[]): string[] {
         errors.push('only one {delete_reply} per autoresponder !');
       }
       checkDuration(node.args[0], 'delete_reply', 1, errors);
+      continue;
+    }
+
+    if (node.name === 'error') {
+      errorTags += 1;
+      if (errorTags === 2) {
+        errors.push('only one {error} per autoresponder !');
+      }
+      if ((node.args[0] ?? '').trim().length === 0) {
+        errors.push('{error} needs a message, like {error: slow your roll !!}');
+      }
       continue;
     }
 

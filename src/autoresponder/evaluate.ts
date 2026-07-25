@@ -207,6 +207,22 @@ export async function evaluate(
     (node) => node.kind === 'placeholder' && node.name === 'silent',
   );
 
+  const errorNode = nodes.find(
+    (node) => node.kind === 'placeholder' && node.name === 'error',
+  );
+  const errorTemplate =
+    errorNode?.kind === 'placeholder' ? (errorNode.args[0] ?? '') : '';
+
+  const fail = async (
+    message: string,
+  ): Promise<{ ok: false; message: string; silent: boolean }> => {
+    if (errorTemplate.trim().length > 0) {
+      const custom = (await renderInline(errorTemplate, ctx, captures)).trim();
+      if (custom.length > 0) return { ok: false, message: custom, silent };
+    }
+    return { ok: false, message, silent };
+  };
+
   let currentEmbeds: APIEmbed[] = [];
   let wrapCurrent = false;
   let wrapColor: number | null = null;
@@ -277,11 +293,7 @@ export async function evaluate(
         meta.userId,
       );
       if (remaining > 0) {
-        return {
-          ok: false,
-          message: `slow down !! try again in ${formatDuration(remaining)}`,
-          silent,
-        };
+        return fail(`slow down !! try again in ${formatDuration(remaining)}`);
       }
 
       cooldownSeconds = seconds;
@@ -349,6 +361,10 @@ export async function evaluate(
       continue;
     }
 
+    if (node.name === 'error') {
+      continue;
+    }
+
     if (node.name === 'send') {
       const channel = resolveChannelArg(ctx, args[0] ?? '');
       if (channel && channel.isTextBased()) {
@@ -369,11 +385,7 @@ export async function evaluate(
       if (targetId !== ctx.member.id) {
         const member = await resolveMemberArg(ctx, targetId);
         if (!member) {
-          return {
-            ok: false,
-            message: `<@${targetId}> isn't in this server !`,
-            silent,
-          };
+          return fail(`<@${targetId}> isn't in this server !`);
         }
       }
       actions.roleActions.push({
@@ -431,7 +443,7 @@ export async function evaluate(
     if (guard) {
       const result = await guard(meta, args, ctx);
       if (!result.ok) {
-        return { ok: false, message: result.message, silent };
+        return fail(result.message);
       }
       continue;
     }
@@ -442,11 +454,7 @@ export async function evaluate(
       if (delta && delta.userId !== meta.userId) {
         const member = await resolveMemberArg(ctx, delta.userId);
         if (!member) {
-          return {
-            ok: false,
-            message: `<@${delta.userId}> isn't in this server !`,
-            silent,
-          };
+          return fail(`<@${delta.userId}> isn't in this server !`);
         }
       }
       if (delta?.kind === 'balance') {
@@ -488,7 +496,7 @@ export async function evaluate(
       })();
     } catch (err) {
       if (err instanceof EffectError) {
-        return { ok: false, message: err.message, silent };
+        return fail(err.message);
       }
       throw err;
     }
