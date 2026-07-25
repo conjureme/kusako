@@ -27,7 +27,7 @@ import { templateIssues } from '../autoresponder/validate.js';
 import { parse } from '../autoresponder/parser.js';
 import { evaluate } from '../autoresponder/evaluate.js';
 import { deliver } from '../autoresponder/deliver.js';
-import { serverEmbed, NO_DMS } from '../style.js';
+import { serverEmbed, failureEmbed, NO_DMS } from '../style.js';
 import { paginate, applyPage } from '../pagination.js';
 import { registerPage } from '../pageRegistry.js';
 import { logger } from '../logger.js';
@@ -65,8 +65,7 @@ export async function fireButtonResponder(
   if (!result.ok) {
     if (!result.silent) {
       await interaction.channel.send({
-        content: result.message,
-        allowedMentions: { parse: [] },
+        embeds: [failureEmbed(result.message)],
       });
     }
     return;

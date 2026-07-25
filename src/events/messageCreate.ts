@@ -16,6 +16,7 @@ import {
 } from '../levels.js';
 import { getGameCooldownRemaining, setGameCooldown } from '../games.js';
 import { fireLevelUps } from '../levelups.js';
+import { failureEmbed } from '../style.js';
 import { logger } from '../logger.js';
 
 export function registerMessageCreate(client: SakoClient): void {
@@ -83,8 +84,7 @@ export function registerMessageCreate(client: SakoClient): void {
         if (!result.ok) {
           if (!result.silent) {
             await message.channel.send({
-              content: result.message,
-              allowedMentions: { parse: [] },
+              embeds: [failureEmbed(result.message)],
             });
           }
           continue;

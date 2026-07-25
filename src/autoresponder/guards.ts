@@ -127,7 +127,7 @@ export const guards = new Map<string, Guard>([
       const currency = getCurrency(meta.guildId);
       return {
         ok: false,
-        message: `you need ${currency.emoji} **${amount.toLocaleString('en-US')} ${currency.name}** to do that ! you only have ${balance.toLocaleString('en-US')} !`,
+        message: `you need ${currency.emoji} **${amount.toLocaleString('en-US')} ${currency.name}** for that,, you've only got ${balance.toLocaleString('en-US')} !`,
       };
     },
   ],
@@ -158,7 +158,7 @@ export const guards = new Map<string, Guard>([
 
       return {
         ok: false,
-        message: `you need ${quantity}× ${item.emoji ?? '📦'} **${item.name}** to do that !`,
+        message: `you need ${quantity}× ${item.emoji ?? '📦'} **${item.name}** for that !`,
       };
     },
   ],
@@ -185,7 +185,7 @@ export const guards = new Map<string, Guard>([
 
       return {
         ok: false,
-        message: `that only works in ${channel.toString()} !`,
+        message: `psst, that only works in ${channel.toString()} ~`,
       };
     },
   ],
@@ -196,7 +196,7 @@ export const guards = new Map<string, Guard>([
       if (channel && ctx.channel.id === channel.id) {
         return {
           ok: false,
-          message: `that doesn't work in ${channel.toString()} !`,
+          message: `not here ! that one's off-limits in ${channel.toString()}`,
         };
       }
       return { ok: true };
@@ -225,7 +225,7 @@ export const guards = new Map<string, Guard>([
 
       return {
         ok: false,
-        message: `you need the **${role.name}** role to do that !`,
+        message: `you need the **${role.name}** role for that !`,
       };
     },
   ],
@@ -236,7 +236,7 @@ export const guards = new Map<string, Guard>([
       if (role && ctx.member.roles.cache.has(role.id)) {
         return {
           ok: false,
-          message: `the **${role.name}** role can't use this one !`,
+          message: `sorry, the **${role.name}** role can't touch this one~`,
         };
       }
       return { ok: true };
@@ -255,7 +255,7 @@ export const guards = new Map<string, Guard>([
 
       if (meta.userId === id) return { ok: true };
 
-      return { ok: false, message: "this one isn't for you c:" };
+      return { ok: false, message: "this one's not for you,," };
     },
   ],
   [
@@ -275,7 +275,7 @@ export const guards = new Map<string, Guard>([
       if (words.length < needed) {
         return {
           ok: false,
-          message: `that needs at least ${needed} word${needed === 1 ? '' : 's'} with it ! (you gave ${words.length})`,
+          message: `that needs at least ${needed} word${needed === 1 ? '' : 's'} with it..... you gave ${words.length}`,
         };
       }
 
@@ -294,7 +294,7 @@ export const guards = new Map<string, Guard>([
     (meta, args) => {
       const id = userIdOf(args[0] ?? '');
       if (id && meta.userId === id) {
-        return { ok: false, message: "this one isn't for you c:" };
+        return { ok: false, message: "this one's not for you,,," };
       }
       return { ok: true };
     },
@@ -312,7 +312,7 @@ export const guards = new Map<string, Guard>([
 
       if (ctx.member.permissions.has(perm)) return { ok: true };
 
-      return { ok: false, message: "you don't have permission to do that !" };
+      return { ok: false, message: "you're not allowed to do that !" };
     },
   ],
   [
@@ -320,7 +320,7 @@ export const guards = new Map<string, Guard>([
     (_meta, args, ctx) => {
       const perm = resolvePermArg(args[0] ?? '');
       if (perm && ctx.member.permissions.has(perm)) {
-        return { ok: false, message: "you can't use this one c:" };
+        return { ok: false, message: "nuh uh, this one's not for you" };
       }
       return { ok: true };
     },

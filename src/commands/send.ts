@@ -5,7 +5,7 @@ import { parse } from '../autoresponder/parser.js';
 import { templateIssues } from '../autoresponder/validate.js';
 import { evaluate } from '../autoresponder/evaluate.js';
 import { deliver } from '../autoresponder/deliver.js';
-import { userEmbed, NO_DMS } from '../style.js';
+import { userEmbed, failureEmbed, NO_DMS } from '../style.js';
 
 const MESSAGE_MAX = 2000;
 
@@ -69,8 +69,7 @@ export const send: SlashCommand = {
 
     if (!result.ok) {
       await interaction.reply({
-        content: result.message,
-        allowedMentions: { parse: [] },
+        embeds: [failureEmbed(result.message)],
       });
       return;
     }

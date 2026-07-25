@@ -65,7 +65,7 @@ export const effects = new Map<string, Effect>([
         const who =
           targetId === meta.userId ? "you don't" : `<@${targetId}> doesn't`;
         throw new EffectError(
-          `${who} have enough ${currency.emoji} ${currency.name} for that !`,
+          `${who} have enough ${currency.emoji} ${currency.name} for that,,`,
         );
       }
     },
@@ -95,7 +95,7 @@ export const effects = new Map<string, Effect>([
         const who =
           targetId === meta.userId ? "you don't" : `<@${targetId}> doesn't`;
         throw new EffectError(
-          `${who} have enough ${item.emoji ?? '📦'} **${item.name}** for that !`,
+          `${who} have enough ${item.emoji ?? '📦'} **${item.name}** for that,,`,
         );
       }
     },

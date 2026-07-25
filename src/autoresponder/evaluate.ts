@@ -279,7 +279,7 @@ export async function evaluate(
       if (remaining > 0) {
         return {
           ok: false,
-          message: `slow down !! you can do that again in ${formatDuration(remaining)} c:`,
+          message: `slow down !! try again in ${formatDuration(remaining)}`,
           silent,
         };
       }

@@ -38,3 +38,7 @@ export function userEmbed(user: User): EmbedBuilder {
     iconURL: user.displayAvatarURL(),
   });
 }
+
+export function failureEmbed(message: string): EmbedBuilder {
+  return new EmbedBuilder().setColor(colors.cream).setDescription(message);
+}

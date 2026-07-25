@@ -24,7 +24,7 @@ import {
   type Item,
 } from '../items.js';
 import { getListing } from '../shop.js';
-import { serverEmbed, userEmbed, NO_DMS } from '../style.js';
+import { serverEmbed, userEmbed, failureEmbed, NO_DMS } from '../style.js';
 import { parse } from '../autoresponder/parser.js';
 import type { Node, PlaceholderNode } from '../autoresponder/ast.js';
 import { templateIssues } from '../autoresponder/validate.js';
@@ -657,8 +657,7 @@ export const items: SlashCommand = {
 
       if (!result.ok) {
         await interaction.reply({
-          content: result.message,
-          allowedMentions: { parse: [] },
+          embeds: [failureEmbed(result.message)],
         });
         return;
       }
