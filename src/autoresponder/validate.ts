@@ -161,10 +161,19 @@ export function validateTemplate(nodes: Node[]): string[] {
     }
 
     if (node.captureName) {
-      errors.push(
-        `"as ${node.captureName}" doesn't work on {${node.name}}. "as" is only for tags that create a value, like {range} and {choice} !`,
-      );
-      continue;
+      if (!placeholders.has(node.name)) {
+        errors.push(
+          `"as ${node.captureName}" doesn't work on {${node.name}}. "as" is only for tags that create a value, like {range}, {choice}, or a {user.*} placeholder !`,
+        );
+        continue;
+      }
+
+      if (bound.has(node.captureName)) {
+        errors.push(
+          `two tags both create [${node.captureName}]. give one its own name with "as", like {${node.name} as something}`,
+        );
+      }
+      bound.add(node.captureName);
     }
 
     if (node.name === 'split' || node.name === 'delay') {

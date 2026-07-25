@@ -247,6 +247,12 @@ export async function evaluate(
     wrapColor = null;
   };
 
+  // TODO (as-prebind):: `{... as name}` binds happen inline and in template order...
+  // guard/coolldowns that fail early does `return fail(...)` before a
+  // later bind runs, resulting in [ref] rendering raw inside `{error:}` for ex.
+
+  // needs pre-resolve for every display placeholder bind, before this loop,
+  // then let loop skip re-binding. generators would stay inline (or order-dep)!
   for (const node of nodes) {
     if (node.kind === 'text') {
       current += node.value;
@@ -293,6 +299,7 @@ export async function evaluate(
         meta.userId,
       );
       if (remaining > 0) {
+        // (as-prebind):: origin; this returns before later binds run
         return fail(`slow down !! try again in ${formatDuration(remaining)}`);
       }
 
@@ -471,7 +478,13 @@ export async function evaluate(
       continue;
     }
     try {
-      current += await placeholder.resolve(ctx, args);
+      const value = await placeholder.resolve(ctx, args);
+      if (node.captureName) {
+        // (as-prebind):: this inline bind is what a pre-loop pass would hoist
+        captures.set(node.captureName, value);
+      } else {
+        current += value;
+      }
     } catch {
       current += node.raw;
     }
