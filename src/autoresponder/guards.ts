@@ -5,7 +5,32 @@ import { getItem, getQuantity } from '../items.js';
 import type { EvalMeta, RenderContext } from './context.js';
 import { parseAmount } from './args.js';
 
-export type GuardResult = { ok: true } | { ok: false; message: string };
+export type FailureData = Record<string, string>;
+export type GuardResult =
+  | { ok: true }
+  | { ok: false; message: string; data?: FailureData };
+
+export const FAILURE_CAPTURES = new Set<string>([
+  'cooldown.remaining',
+  'cooldown.total',
+  'requirebal.needed',
+  'requirebal.have',
+  'requirebal.short',
+  'requireitem.item',
+  'requireitem.needed',
+  'requireitem.have',
+  'requireitem.short',
+  'requirearg.needed',
+  'requirearg.have',
+  'requirearg.type',
+  'modifybal.have',
+  'modifybal.short',
+  'modifyinv.item',
+  'modifyinv.have',
+  'modifyinv.short',
+  'target.user',
+  'target.id',
+]);
 export type Guard = (
   meta: EvalMeta,
   args: string[],
@@ -128,6 +153,11 @@ export const guards = new Map<string, Guard>([
       return {
         ok: false,
         message: `you need ${currency.emoji} **${amount.toLocaleString('en-US')} ${currency.name}** for that,, you've only got ${balance.toLocaleString('en-US')} !`,
+        data: {
+          'requirebal.needed': amount.toLocaleString('en-US'),
+          'requirebal.have': balance.toLocaleString('en-US'),
+          'requirebal.short': (amount - balance).toLocaleString('en-US'),
+        },
       };
     },
   ],
@@ -159,6 +189,12 @@ export const guards = new Map<string, Guard>([
       return {
         ok: false,
         message: `you need ${quantity}× ${item.emoji ?? '📦'} **${item.name}** for that !`,
+        data: {
+          'requireitem.item': item.name,
+          'requireitem.needed': quantity.toLocaleString('en-US'),
+          'requireitem.have': have.toLocaleString('en-US'),
+          'requireitem.short': (quantity - have).toLocaleString('en-US'),
+        },
       };
     },
   ],
@@ -276,6 +312,11 @@ export const guards = new Map<string, Guard>([
         return {
           ok: false,
           message: `that needs at least ${needed} word${needed === 1 ? '' : 's'} with it..... you gave ${words.length}`,
+          data: {
+            'requirearg.needed': String(needed),
+            'requirearg.have': String(words.length),
+            ...(typeName.length > 0 ? { 'requirearg.type': typeName } : {}),
+          },
         };
       }
 
@@ -283,6 +324,11 @@ export const guards = new Map<string, Guard>([
         return {
           ok: false,
           message: `word ${needed} needs to be ${type.describe} !`,
+          data: {
+            'requirearg.needed': String(needed),
+            'requirearg.have': String(words.length),
+            'requirearg.type': typeName,
+          },
         };
       }
 

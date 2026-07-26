@@ -25,6 +25,7 @@ import {
   resolveRoleArg,
   resolveMemberArg,
   userIdOf,
+  type FailureData,
 } from './guards.js';
 import { effects, pendingOf, EffectError } from './effects.js';
 import { getCooldownRemaining, setCooldown } from './cooldowns.js';
@@ -215,8 +216,14 @@ export async function evaluate(
 
   const fail = async (
     message: string,
+    data?: FailureData,
   ): Promise<{ ok: false; message: string; silent: boolean }> => {
     if (errorTemplate.trim().length > 0) {
+      if (data) {
+        for (const [key, value] of Object.entries(data)) {
+          captures.set(key, value);
+        }
+      }
       const custom = (await renderInline(errorTemplate, ctx, captures)).trim();
       if (custom.length > 0) return { ok: false, message: custom, silent };
     }
@@ -300,7 +307,10 @@ export async function evaluate(
       );
       if (remaining > 0) {
         // (as-prebind):: origin; this returns before later binds run
-        return fail(`slow down !! try again in ${formatDuration(remaining)}`);
+        return fail(`slow down !! try again in ${formatDuration(remaining)}`, {
+          'cooldown.remaining': formatDuration(remaining),
+          'cooldown.total': formatDuration(seconds),
+        });
       }
 
       cooldownSeconds = seconds;
@@ -392,7 +402,10 @@ export async function evaluate(
       if (targetId !== ctx.member.id) {
         const member = await resolveMemberArg(ctx, targetId);
         if (!member) {
-          return fail(`<@${targetId}> isn't in this server !`);
+          return fail(`<@${targetId}> isn't in this server !`, {
+            'target.user': `<@${targetId}>`,
+            'target.id': targetId,
+          });
         }
       }
       actions.roleActions.push({
@@ -450,7 +463,7 @@ export async function evaluate(
     if (guard) {
       const result = await guard(meta, args, ctx);
       if (!result.ok) {
-        return fail(result.message);
+        return fail(result.message, result.data);
       }
       continue;
     }
@@ -461,7 +474,10 @@ export async function evaluate(
       if (delta && delta.userId !== meta.userId) {
         const member = await resolveMemberArg(ctx, delta.userId);
         if (!member) {
-          return fail(`<@${delta.userId}> isn't in this server !`);
+          return fail(`<@${delta.userId}> isn't in this server !`, {
+            'target.user': `<@${delta.userId}>`,
+            'target.id': delta.userId,
+          });
         }
       }
       if (delta?.kind === 'balance') {
@@ -509,7 +525,7 @@ export async function evaluate(
       })();
     } catch (err) {
       if (err instanceof EffectError) {
-        return fail(err.message);
+        return fail(err.message, err.data);
       }
       throw err;
     }

@@ -4,7 +4,14 @@ import type { EvalMeta } from './context.js';
 import { parseAmount } from './args.js';
 import { userIdOf } from './guards.js';
 
-export class EffectError extends Error {}
+export class EffectError extends Error {
+  readonly data?: Record<string, string>;
+
+  constructor(message: string, data?: Record<string, string>) {
+    super(message);
+    this.data = data;
+  }
+}
 
 export type Effect = (meta: EvalMeta, args: string[]) => void;
 
@@ -66,6 +73,13 @@ export const effects = new Map<string, Effect>([
           targetId === meta.userId ? "you don't" : `<@${targetId}> doesn't`;
         throw new EffectError(
           `${who} have enough ${currency.emoji} ${currency.name} for that,,`,
+          {
+            'modifybal.have': result.balance.toLocaleString('en-US'),
+            'modifybal.short': Math.max(
+              0,
+              Math.abs(amount) - result.balance,
+            ).toLocaleString('en-US'),
+          },
         );
       }
     },
@@ -96,6 +110,14 @@ export const effects = new Map<string, Effect>([
           targetId === meta.userId ? "you don't" : `<@${targetId}> doesn't`;
         throw new EffectError(
           `${who} have enough ${item.emoji ?? '📦'} **${item.name}** for that,,`,
+          {
+            'modifyinv.item': item.name,
+            'modifyinv.have': result.quantity.toLocaleString('en-US'),
+            'modifyinv.short': Math.max(
+              0,
+              Math.abs(delta) - result.quantity,
+            ).toLocaleString('en-US'),
+          },
         );
       }
     },

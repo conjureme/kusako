@@ -3,7 +3,7 @@ import { parse } from './parser.js';
 import { generators, RANGE_FORMAT, WEIGHTED_OPTION } from './generators.js';
 import { parseAmount, DYNAMIC_ARG, YEAR_SECONDS } from './args.js';
 import { parseColor } from '../embeds.js';
-import { ARG_TYPES, resolvePermArg } from './guards.js';
+import { ARG_TYPES, resolvePermArg, FAILURE_CAPTURES } from './guards.js';
 import { placeholders, targetArgIndex } from './placeholders.js';
 import { MAX_BUTTONS } from './evaluate.js';
 import { URLISH } from '../embeds.js';
@@ -209,6 +209,14 @@ export function validateTemplate(nodes: Node[]): string[] {
       }
       if ((node.args[0] ?? '').trim().length === 0) {
         errors.push('{error} needs a message, like {error: slow your roll !!}');
+      }
+      for (const ref of node.args[0]?.matchAll(/\[([\w.]+\.[\w.]+)\]/g) ?? []) {
+        const name = ref[1]!.toLowerCase();
+        if (!FAILURE_CAPTURES.has(name)) {
+          errors.push(
+            `[${name}] isn't a thing {error} can show. try one like [cooldown.remaining] or [requirebal.short]`,
+          );
+        }
       }
       continue;
     }
