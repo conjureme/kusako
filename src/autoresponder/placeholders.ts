@@ -6,6 +6,7 @@ import { getItem, getQuantity, getInventory } from '../items.js';
 import type { RenderContext } from './context.js';
 import { resolveMemberArg, resolveChannelArg } from './guards.js';
 import { getXp, levelFromXp } from '../levels.js';
+import { botPool } from '../memberCache.js';
 
 export type Resolver = (
   ctx: RenderContext,
@@ -74,12 +75,12 @@ function nextBoostLevel(ctx: RenderContext): number | null {
   return tier >= BOOST_THRESHOLDS.length ? null : tier + 1;
 }
 
-function botCount(ctx: RenderContext): number {
-  return ctx.guild.members.cache.filter((m) => m.user.bot).size;
+async function botCount(ctx: RenderContext): Promise<number> {
+  return (await botPool(ctx.guild)).size;
 }
 
-function humanCount(ctx: RenderContext): number {
-  return Math.max(0, ctx.guild.memberCount - botCount(ctx));
+async function humanCount(ctx: RenderContext): Promise<number> {
+  return Math.max(0, ctx.guild.memberCount - (await botCount(ctx)));
 }
 
 function balanceOf(ctx: RenderContext, userId: string): number {
@@ -309,14 +310,20 @@ export const placeholders = new Map<string, Placeholder>([
   ],
   [
     'server.membercount.nobots',
-    { resolve: (ctx) => humanCount(ctx).toString() },
+    { resolve: async (ctx) => (await humanCount(ctx)).toString() },
   ],
   [
     'server.membercount.nobots.ordinal',
-    { resolve: (ctx) => ordinal(humanCount(ctx)) },
+    { resolve: async (ctx) => ordinal(await humanCount(ctx)) },
   ],
-  ['server.botcount', { resolve: (ctx) => botCount(ctx).toString() }],
-  ['server.botcount.ordinal', { resolve: (ctx) => ordinal(botCount(ctx)) }],
+  [
+    'server.botcount',
+    { resolve: async (ctx) => (await botCount(ctx)).toString() },
+  ],
+  [
+    'server.botcount.ordinal',
+    { resolve: async (ctx) => ordinal(await botCount(ctx)) },
+  ],
   [
     'server.rolecount',
     { resolve: (ctx) => (ctx.guild.roles.cache.size - 1).toString() },

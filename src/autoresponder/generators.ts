@@ -1,3 +1,4 @@
+import { humanPool } from '../memberCache.js';
 import type { RenderContext } from './context.js';
 
 export interface GeneratorResult {
@@ -9,7 +10,7 @@ export type Generator = (
   ctx: RenderContext,
   args: string[],
   indices: ReadonlyMap<string, number>,
-) => GeneratorResult;
+) => GeneratorResult | Promise<GeneratorResult>;
 
 export const RANGE_FORMAT = /^(-?\d+)\s*-\s*(-?\d+)$/;
 export const WEIGHTED_OPTION = /^(\d+)\s+(.+)$/;
@@ -85,8 +86,8 @@ export const generators = new Map<string, Generator>([
   ],
   [
     'randommember',
-    (ctx) => {
-      const pool = ctx.guild.members.cache.filter((m) => !m.user.bot);
+    async (ctx) => {
+      const pool = await humanPool(ctx.guild);
       const member = pool.random();
       if (!member) throw new Error('no cached members');
 
