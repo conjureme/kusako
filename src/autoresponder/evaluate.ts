@@ -276,7 +276,7 @@ export async function evaluate(
     const generate = generators.get(node.name);
     if (generate) {
       try {
-        const result = generate(ctx, args, captureIndices);
+        const result = await generate(ctx, args, captureIndices);
         const name = node.captureName ?? node.name;
         captures.set(name, result.value);
         if (result.index !== undefined) captureIndices.set(name, result.index);
