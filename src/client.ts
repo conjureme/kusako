@@ -27,6 +27,12 @@ export function createClient(): SakoClient {
       GatewayIntentBits.GuildMembers,
     ],
     partials: [Partials.Channel, Partials.Message],
+    sweepers: {
+      guildMembers: {
+        interval: 600,
+        filter: () => (member) => member.id !== member.client.user.id,
+      },
+    },
   }) as SakoClient;
 
   client.commands = new Collection();
