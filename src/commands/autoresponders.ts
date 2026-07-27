@@ -67,6 +67,10 @@ export function templateTraits(response: string): {
     badges.push('roles');
     does.push('gives or takes roles');
   }
+  if (has('temprole')) {
+    badges.push('temp roles');
+    does.push('gives a role for a while');
+  }
   if (cooldown) badges.push(`${cooldown} cooldown`);
   if (has('silent')) {
     badges.push('silent');

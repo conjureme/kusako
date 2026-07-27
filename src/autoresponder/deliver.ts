@@ -7,7 +7,11 @@ import {
   type Message,
 } from 'discord.js';
 
-import { scheduleMessage, scheduleDeletion } from '../scheduler.js';
+import {
+  scheduleMessage,
+  scheduleDeletion,
+  scheduleRoleRemoval,
+} from '../scheduler.js';
 import { buttonCustomId } from './store.js';
 import { logger } from '../logger.js';
 import type { Segment, MessageActions } from './evaluate.js';
@@ -141,6 +145,17 @@ export async function deliver(
     try {
       if (action.add) await members.addRole(options);
       else await members.removeRole(options);
+
+      // only queue the removal once the grant actually landed, so a failed
+      // {temprole} doesn't leave a timer that strips a role they already had
+      if (action.forSeconds) {
+        scheduleRoleRemoval(
+          target.member.guild.id,
+          action.userId,
+          action.roleId,
+          action.forSeconds,
+        );
+      }
     } catch (err) {
       logger.warn(
         { err, ...options },

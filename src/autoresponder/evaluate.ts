@@ -50,7 +50,12 @@ export interface MessageActions {
   deleteTrigger: boolean;
   dm: boolean;
   sendToChannelId: string | null;
-  roleActions: Array<{ add: boolean; roleId: string; userId: string }>;
+  roleActions: Array<{
+    add: boolean;
+    roleId: string;
+    userId: string;
+    forSeconds?: number;
+  }>;
   nickActions: Array<{ userId: string; nick: string }>;
   deleteReplyAfter: number | null;
   buttons: Array<
@@ -401,12 +406,19 @@ export async function evaluate(
       continue;
     }
 
-    if (node.name === 'giverole' || node.name === 'takerole') {
+    if (
+      node.name === 'giverole' ||
+      node.name === 'takerole' ||
+      node.name === 'temprole'
+    ) {
+      const temp = node.name === 'temprole';
       const role = resolveRoleArg(ctx, args[0] ?? '');
-      const targetRaw = (args[1] ?? '').trim();
+      // temprole's duration sits in arg 1, so its target shifts to arg 2
+      const targetRaw = (args[temp ? 2 : 1] ?? '').trim();
       const targetId =
         targetRaw.length > 0 ? userIdOf(targetRaw) : ctx.member.id;
-      if (!role || !targetId) {
+      const forSeconds = temp ? clampDuration(parseAmount(args[1] ?? '')) : 0;
+      if (!role || !targetId || (temp && forSeconds <= 0)) {
         current += node.raw;
         continue;
       }
@@ -420,9 +432,10 @@ export async function evaluate(
         }
       }
       actions.roleActions.push({
-        add: node.name === 'giverole',
+        add: node.name !== 'takerole',
         roleId: role.id,
         userId: targetId,
+        ...(temp ? { forSeconds } : {}),
       });
       continue;
     }

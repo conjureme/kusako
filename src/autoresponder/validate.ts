@@ -18,6 +18,7 @@ function checkDuration(
   tag: string,
   min: number,
   errors: string[],
+  example = `{${tag}:540}`,
 ): void {
   const value = arg ?? '';
   if (DYNAMIC_ARG.test(value.trim())) return;
@@ -25,7 +26,7 @@ function checkDuration(
   const seconds = parseAmount(value);
   if (seconds === null || seconds < min || seconds > YEAR_SECONDS) {
     errors.push(
-      `{${tag}} needs seconds between ${min} and ${YEAR_SECONDS.toLocaleString('en-US')} (or a [capture]), like {${tag}:540}`,
+      `{${tag}} needs seconds between ${min} and ${YEAR_SECONDS.toLocaleString('en-US')} (or a [capture]), like ${example}`,
     );
   }
 }
@@ -374,11 +375,15 @@ export function validateTemplate(nodes: Node[]): string[] {
       continue;
     }
 
-    if (node.name === 'giverole' || node.name === 'takerole') {
+    if (
+      node.name === 'giverole' ||
+      node.name === 'takerole' ||
+      node.name === 'temprole'
+    ) {
       roleTags += 1;
       if (roleTags === MAX_ROLE_TAGS + 1) {
         errors.push(
-          `max ${MAX_ROLE_TAGS} {giverole}/{takerole} tags per autoresponder !`,
+          `max ${MAX_ROLE_TAGS} {giverole}/{takerole}/{temprole} tags per autoresponder !`,
         );
       }
       if ((node.args[0] ?? '').trim().length === 0) {
@@ -386,7 +391,18 @@ export function validateTemplate(nodes: Node[]): string[] {
           `{${node.name}} needs a role, like {${node.name}:@fisher} or a role id`,
         );
       }
-      checkTargetArg(node.args[1], node.name, errors);
+      if (node.name === 'temprole') {
+        checkDuration(
+          node.args[1],
+          'temprole',
+          1,
+          errors,
+          '{temprole:@stinky|86400}',
+        );
+        checkTargetArg(node.args[2], node.name, errors);
+      } else {
+        checkTargetArg(node.args[1], node.name, errors);
+      }
       continue;
     }
 
