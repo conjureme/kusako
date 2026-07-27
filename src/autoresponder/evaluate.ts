@@ -10,7 +10,7 @@ import {
   type EmbedData,
 } from '../embeds.js';
 import { colors } from '../style.js';
-import type { Node } from './ast.js';
+import type { Node, PlaceholderNode } from './ast.js';
 import { parse } from './parser.js';
 import {
   PendingEffects,
@@ -254,12 +254,23 @@ export async function evaluate(
     wrapColor = null;
   };
 
-  // TODO (as-prebind):: `{... as name}` binds happen inline and in template order...
-  // guard/coolldowns that fail early does `return fail(...)` before a
-  // later bind runs, resulting in [ref] rendering raw inside `{error:}` for ex.
+  const prebound = new Set<PlaceholderNode>();
+  for (const node of nodes) {
+    if (node.kind !== 'placeholder' || !node.captureName) continue;
+    if (generators.has(node.name)) continue;
 
-  // needs pre-resolve for every display placeholder bind, before this loop,
-  // then let loop skip re-binding. generators would stay inline (or order-dep)!
+    const placeholder = placeholders.get(node.name);
+    if (!placeholder || placeholder.ledger) continue;
+
+    try {
+      const args = interpolateArgs(node.args, captures);
+      captures.set(node.captureName, await placeholder.resolve(ctx, args));
+      prebound.add(node);
+    } catch {
+      // leave it for the main loop,, which renders the tag raw
+    }
+  }
+
   for (const node of nodes) {
     if (node.kind === 'text') {
       current += node.value;
@@ -493,10 +504,11 @@ export async function evaluate(
       current += node.raw;
       continue;
     }
+    if (prebound.has(node)) continue;
+
     try {
       const value = await placeholder.resolve(ctx, args);
       if (node.captureName) {
-        // (as-prebind):: this inline bind is what a pre-loop pass would hoist
         captures.set(node.captureName, value);
       } else {
         current += value;

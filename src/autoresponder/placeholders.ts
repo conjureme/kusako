@@ -18,6 +18,9 @@ export type TargetKind = 'user' | 'user1' | 'channel';
 export interface Placeholder {
   resolve: Resolver;
   target?: TargetKind;
+  // reads the pending-effect ledger, so its value depends on where it sits in
+  // the template. these can never be hoisted out of template order !!
+  ledger?: true;
 }
 
 const TARGET_ARG: Record<TargetKind, number> = {
@@ -193,6 +196,7 @@ export const placeholders = new Map<string, Placeholder>([
     'user.item',
     {
       target: 'user1',
+      ledger: true,
       resolve: async (ctx, args) => {
         const name = (args[0] ?? '').trim();
         if (name.length === 0) throw new Error('item needs a name');
@@ -213,6 +217,7 @@ export const placeholders = new Map<string, Placeholder>([
     'user.inventory',
     {
       target: 'user',
+      ledger: true,
       resolve: async (ctx, args) => {
         const member = await memberOf(ctx, args[0]);
         let entries = getInventory(ctx.guild.id, member.id);
@@ -254,6 +259,7 @@ export const placeholders = new Map<string, Placeholder>([
     'user.itemcount',
     {
       target: 'user1',
+      ledger: true,
       resolve: async (ctx, args) => {
         const name = (args[0] ?? '').trim();
         if (name.length === 0) throw new Error('itemcount needs an item');
@@ -388,6 +394,7 @@ export const placeholders = new Map<string, Placeholder>([
     'user.balance',
     {
       target: 'user',
+      ledger: true,
       resolve: async (ctx, args) =>
         balanceOf(ctx, (await memberOf(ctx, args[0])).id).toLocaleString(
           'en-US',
