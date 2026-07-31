@@ -11,4 +11,5 @@ export const env = {
   clientId: required('CLIENT_ID'),
   guildId: process.env.GUILD_ID ?? '',
   dbPath: process.env.DB_PATH ?? 'data/sako.db',
+  ownerId: process.env.OWNER_ID ?? '',
 };
