@@ -12,7 +12,7 @@ import { formatDuration } from '../autoresponder/args.js';
 import { userEmbed, NO_DMS } from '../style.js';
 
 const LINES = [
-  'thank u for the pats!! here, take {{pay}} ٤:',
+  'thank u for the pats!! here, take {{pay}} 𐔌˙.',
   'whaaa?! {{pay}} fell out while you were patting !!',
   ':33333 take these ! {{pay}}',
   '{{pay}} for you,,, come back soon !',
