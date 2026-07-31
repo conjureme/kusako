@@ -131,6 +131,27 @@ CREATE TABLE IF NOT EXISTS game_cooldowns (
   PRIMARY KEY (guild_id, game, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS global_balances (
+  user_id TEXT NOT NULL,
+  currency TEXT NOT NULL,
+  balance INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (user_id, currency)
+);
+
+CREATE TABLE IF NOT EXISTS global_transactions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  currency TEXT NOT NULL,
+  delta INTEGER NOT NULL,
+  balance_after INTEGER NOT NULL,
+  reason TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_global_transactions_user
+  ON global_transactions (user_id, currency);
+
 CREATE TABLE IF NOT EXISTS embeds (
   guild_id TEXT NOT NULL,
   name TEXT NOT NULL,
