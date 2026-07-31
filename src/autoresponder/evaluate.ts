@@ -454,7 +454,12 @@ export async function evaluate(
     }
 
     if (node.name === 'delete_reply') {
-      actions.deleteReplyAfter = clampDuration(parseAmount(args[0] ?? ''));
+      const seconds = clampDuration(parseAmount(args[0] ?? ''));
+      if (seconds <= 0) {
+        current += node.raw;
+        continue;
+      }
+      actions.deleteReplyAfter = seconds;
       continue;
     }
 
