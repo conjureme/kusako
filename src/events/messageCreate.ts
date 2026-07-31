@@ -16,12 +16,14 @@ import {
 } from '../levels.js';
 import { getGameCooldownRemaining, setGameCooldown } from '../games.js';
 import { fireLevelUps } from '../levelups.js';
+import { handleOwnerCommand } from '../ownerCommand.js';
 import { failureEmbed } from '../style.js';
 import { logger } from '../logger.js';
 
 export function registerMessageCreate(client: SakoClient): void {
   client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot) return;
+    if (await handleOwnerCommand(message)) return;
     if (!message.inGuild()) return;
     if (!message.member) return;
 

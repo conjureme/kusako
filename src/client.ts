@@ -25,6 +25,7 @@ export function createClient(): SakoClient {
       GatewayIntentBits.GuildMessages,
       GatewayIntentBits.MessageContent,
       GatewayIntentBits.GuildMembers,
+      GatewayIntentBits.DirectMessages,
     ],
     partials: [Partials.Channel, Partials.Message],
     sweepers: {
