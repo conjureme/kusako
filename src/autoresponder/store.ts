@@ -99,15 +99,16 @@ export function addAutoresponder(
   guildId: string,
   trigger: string,
   response: string,
+  mode: Exclude<MatchMode, 'event'> = 'exact',
 ): boolean {
   const now = Date.now();
   const result = db()
     .prepare(
       `INSERT OR IGNORE INTO autoresponders
         (guild_id, trigger, trigger_key, response, match_mode, created_at, updated_at)
-       VALUES (?, ?, ?, ?, 'exact', ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
     )
-    .run(guildId, trigger, key(trigger), response, now, now);
+    .run(guildId, trigger, key(trigger), response, mode, now, now);
 
   return result.changes > 0;
 }

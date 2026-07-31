@@ -92,6 +92,13 @@ export function templateTraits(response: string): {
 const TRIGGER_MAX = 100;
 const RESPONSE_MAX = 2000;
 
+const MATCH_CHOICES = [
+  { name: 'exact (message equals the trigger)', value: 'exact' },
+  { name: 'starts with (whole word at the start)', value: 'startswith' },
+  { name: 'ends with (whole word at the end)', value: 'endswith' },
+  { name: 'includes (anywhere in the message)', value: 'includes' },
+] as const;
+
 function respondersPage(guild: Guild, _userId: string, page: number) {
   const all = listAutoresponders(guild.id);
 
@@ -165,6 +172,12 @@ export const autoresponders: SlashCommand = {
             .setDescription('what sako replies with !')
             .setMaxLength(RESPONSE_MAX)
             .setRequired(true),
+        )
+        .addStringOption((o) =>
+          o
+            .setName('matchmode')
+            .setDescription('how the trigger matches')
+            .addChoices(...MATCH_CHOICES),
         ),
     )
     .addSubcommand((sub) =>
@@ -204,21 +217,7 @@ export const autoresponders: SlashCommand = {
             .setName('mode')
             .setDescription('how the trigger should match')
             .setRequired(true)
-            .addChoices(
-              { name: 'exact (message equals the trigger)', value: 'exact' },
-              {
-                name: 'starts with (whole word at the start)',
-                value: 'startswith',
-              },
-              {
-                name: 'ends with (whole word at the end)',
-                value: 'endswith',
-              },
-              {
-                name: 'includes (anywhere in the message)',
-                value: 'includes',
-              },
-            ),
+            .addChoices(...MATCH_CHOICES),
         ),
     )
     .addSubcommand((sub) =>
@@ -292,11 +291,22 @@ export const autoresponders: SlashCommand = {
         return;
       }
 
-      const created = addAutoresponder(guildId, trigger, response);
+      const mode = interaction.options.getString('matchmode') as Exclude<
+        MatchMode,
+        'event'
+      > | null;
+      const created = addAutoresponder(
+        guildId,
+        trigger,
+        response,
+        mode ?? 'exact',
+      );
 
       await interaction.reply({
         content: created
-          ? `added an autoresponder for ${inlineCode(trigger)} c:`
+          ? mode
+            ? `added an autoresponder for ${inlineCode(trigger)}, matching as ${inlineCode(mode)} c:`
+            : `added an autoresponder for ${inlineCode(trigger)} c:`
           : `an autoresponder for ${inlineCode(trigger)} already exists. use ${inlineCode('/autoresponders edit')} to change it.`,
       });
       return;
