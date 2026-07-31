@@ -4,6 +4,7 @@ import {
   codeBlock,
   inlineCode,
   type AutocompleteInteraction,
+  type EmbedBuilder,
   type Guild,
 } from 'discord.js';
 
@@ -32,10 +33,31 @@ function channelBadge(arg: string): string {
   return `#${trimmed.replace(/^#/, '')}`;
 }
 
+function roleBadge(arg: string): string {
+  const trimmed = arg.trim();
+  if (/^<@&\d+>$/.test(trimmed)) return trimmed;
+  if (/^\d+$/.test(trimmed)) return `<@&${trimmed}>`;
+  return `@${trimmed.replace(/^@/, '')}`;
+}
+
+function userBadge(arg: string): string {
+  const trimmed = arg.trim();
+  const mention = /^<@!?(\d+)>$/.exec(trimmed);
+  if (mention) return `<@${mention[1]}>`;
+  if (/^@?\d+$/.test(trimmed)) return `<@${trimmed.replace(/^@/, '')}>`;
+  return trimmed;
+}
+
+function amountBadge(arg: string): string {
+  const amount = parseAmount(arg);
+  return amount !== null ? amount.toLocaleString('en-US') : arg.trim();
+}
+
 export function templateTraits(response: string): {
   badges: string[];
   cooldown: string | null;
   does: string[];
+  guards: string[];
 } {
   const nodes = parse(response).filter(
     (node): node is PlaceholderNode => node.kind === 'placeholder',
@@ -86,7 +108,115 @@ export function templateTraits(response: string): {
   }
   if (has('deletetrigger')) does.push('deletes the trigger');
 
-  return { badges, cooldown, does };
+  const embedTags = nodes.filter((node) => node.name === 'embed');
+  const namedEmbeds = embedTags.filter((node) => {
+    const arg = (node.args[0] ?? '').trim();
+    return arg.length > 0 && !arg.startsWith('#');
+  });
+  if (namedEmbeds.length === 1) {
+    does.push(`attaches the ${(namedEmbeds[0]!.args[0] ?? '').trim()} embed`);
+  } else if (namedEmbeds.length > 1) {
+    does.push(`attaches ${namedEmbeds.length} embeds`);
+  }
+  if (embedTags.length > namedEmbeds.length) {
+    does.push('wraps the reply in an embed');
+  }
+
+  const buttons = nodes.filter(
+    (node) => node.name === 'addbutton' || node.name === 'addlinkbutton',
+  ).length;
+  if (buttons > 0) does.push(`${buttons} button${buttons === 1 ? '' : 's'}`);
+
+  if (has('react') || has('reactreply')) does.push('reacts');
+  if (has('setnick')) does.push('edits nicknames');
+  const deleteReplyNode = nodes.find((node) => node.name === 'delete_reply');
+  if (deleteReplyNode) {
+    const seconds = parseAmount(deleteReplyNode.args[0] ?? '');
+    does.push(
+      seconds !== null && seconds > 0
+        ? `self-deletes after ${formatDuration(seconds)}`
+        : 'self-deletes',
+    );
+  }
+  if (has('error')) does.push('custom fail message');
+  const boundaries = nodes.filter(
+    (node) => node.name === 'split' || node.name === 'delay',
+  ).length;
+  if (boundaries > 0) does.push(`sends ${boundaries + 1} messages`);
+
+  const guards: string[] = [];
+  for (const node of nodes) {
+    const arg = (node.args[0] ?? '').trim();
+    if (node.name === 'requirebal') {
+      guards.push(`${amountBadge(arg)}+ balance`);
+    } else if (node.name === 'requireitem') {
+      const qty = (node.args[1] ?? '').trim();
+      guards.push(qty.length > 0 ? `needs ${qty}× ${arg}` : `needs ${arg}`);
+    } else if (node.name === 'requirechannel') {
+      guards.push(`in ${channelBadge(arg)}`);
+    } else if (node.name === 'denychannel') {
+      guards.push(`not in ${channelBadge(arg)}`);
+    } else if (node.name === 'requirerole') {
+      guards.push(`for ${roleBadge(arg)}`);
+    } else if (node.name === 'denyrole') {
+      guards.push(`not for ${roleBadge(arg)}`);
+    } else if (node.name === 'requireuser') {
+      guards.push(`only for ${userBadge(arg)}`);
+    } else if (node.name === 'denyuser') {
+      guards.push(`not for ${userBadge(arg)}`);
+    } else if (node.name === 'requireperm') {
+      guards.push(`with ${arg} perms`);
+    } else if (node.name === 'denyperm') {
+      guards.push(`without ${arg} perms`);
+    }
+  }
+  const argCounts = nodes
+    .filter((node) => node.name === 'requirearg')
+    .map((node) => parseAmount(node.args[0] ?? ''))
+    .filter((n): n is number => n !== null && n > 0);
+  if (argCounts.length > 0) {
+    const max = Math.max(...argCounts);
+    guards.push(`requires ${max} arg${max === 1 ? '' : 's'}`);
+  } else if (has('requirearg')) {
+    guards.push('requires args');
+  }
+
+  return { badges, cooldown, does, guards };
+}
+
+export function responderDetailEmbed(
+  guild: Guild,
+  header: string,
+  responder: { response: string; matchMode: MatchMode },
+): EmbedBuilder {
+  const traits = templateTraits(responder.response);
+  const hasRequirearg = parse(responder.response).some(
+    (node) => node.kind === 'placeholder' && node.name === 'requirearg',
+  );
+  const warning =
+    responder.matchMode === 'exact' && hasRequirearg
+      ? '\n-# heads up: {requirearg} never passes on exact mode !'
+      : '';
+
+  const embed = serverEmbed(guild)
+    .setDescription(`## ${header}\n${codeBlock(responder.response)}${warning}`)
+    .setFooter({ text: 'docs coming soon !' })
+    .addFields({
+      name: 'match mode',
+      value: responder.matchMode,
+      inline: true,
+    });
+  if (traits.cooldown) {
+    embed.addFields({ name: 'cooldown', value: traits.cooldown, inline: true });
+  }
+  embed.addFields({
+    name: 'only fires',
+    value: traits.guards.length > 0 ? traits.guards.join(' · ') : 'always',
+  });
+  if (traits.does.length > 0) {
+    embed.addFields({ name: 'does', value: traits.does.join(' · ') });
+  }
+  return embed;
 }
 
 const TRIGGER_MAX = 100;
@@ -302,12 +432,21 @@ export const autoresponders: SlashCommand = {
         mode ?? 'exact',
       );
 
+      if (!created) {
+        await interaction.reply({
+          content: `an autoresponder for ${inlineCode(trigger)} already exists. use ${inlineCode('/autoresponders edit')} to change it.`,
+        });
+        return;
+      }
+
       await interaction.reply({
-        content: created
-          ? mode
-            ? `added an autoresponder for ${inlineCode(trigger)}, matching as ${inlineCode(mode)} c:`
-            : `added an autoresponder for ${inlineCode(trigger)} c:`
-          : `an autoresponder for ${inlineCode(trigger)} already exists. use ${inlineCode('/autoresponders edit')} to change it.`,
+        embeds: [
+          responderDetailEmbed(
+            interaction.guild,
+            `added ${inlineCode(trigger)} !`,
+            { response, matchMode: mode ?? 'exact' },
+          ),
+        ],
       });
       return;
     }
