@@ -2,6 +2,11 @@ import { SlashCommandBuilder, inlineCode } from 'discord.js';
 
 import type { SlashCommand } from '../client.js';
 import { getBalance, getCurrency } from '../economy.js';
+import {
+  GLOBAL_CURRENCIES,
+  GLOBAL_CURRENCY_IDS,
+  getGlobalBalances,
+} from '../globalEconomy.js';
 import { userEmbed, spacerFile, SPACER_IMAGE, NO_DMS } from '../style.js';
 
 const NO_BUFF = '-# ₊˚⊹ nothing boosting...';
@@ -41,12 +46,13 @@ export const balance: SlashCommand = {
       NO_BUFF,
     ].join('\n');
 
+    const globalBalances = getGlobalBalances(target.id);
     const everywhere = [
       '꒰ everywhere ꒱',
-      '📦 **0** thingies',
-      NO_BUFF,
-      '📦 **0** doodadas',
-      NO_BUFF,
+      ...GLOBAL_CURRENCY_IDS.flatMap((id) => [
+        `${GLOBAL_CURRENCIES[id].emoji} **${globalBalances[id].toLocaleString('en-US')}** ${GLOBAL_CURRENCIES[id].name}`,
+        NO_BUFF,
+      ]),
     ].join('\n');
 
     const stash = [
