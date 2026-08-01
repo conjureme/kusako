@@ -23,6 +23,7 @@ import { parse } from '../autoresponder/parser.js';
 import { parseAmount, formatDuration } from '../autoresponder/args.js';
 import type { PlaceholderNode } from '../autoresponder/ast.js';
 import { serverEmbed, NO_DMS } from '../style.js';
+import { commandMention } from '../commandMentions.js';
 import { paginate, applyPage } from '../pagination.js';
 import { registerPage } from '../pageRegistry.js';
 
@@ -465,10 +466,22 @@ export const autoresponders: SlashCommand = {
 
       const edited = editAutoresponder(guildId, trigger, response);
 
+      if (!edited) {
+        await interaction.reply({
+          content: `no autoresponder for ${inlineCode(trigger)} exists yet. use ${inlineCode('/autoresponders add')} to make one.`,
+        });
+        return;
+      }
+
+      const updated = getAutoresponder(guildId, trigger)!;
       await interaction.reply({
-        content: edited
-          ? `updated the autoresponder for ${inlineCode(trigger)} c:`
-          : `no autoresponder for ${inlineCode(trigger)} exists yet. use ${inlineCode('/autoresponders add')} to make one.`,
+        embeds: [
+          responderDetailEmbed(
+            interaction.guild,
+            `edited ${inlineCode(updated.trigger)} !`,
+            updated,
+          ),
+        ],
       });
       return;
     }
@@ -489,13 +502,21 @@ export const autoresponders: SlashCommand = {
 
     if (sub === 'remove') {
       const trigger = interaction.options.getString('trigger', true);
-      const removed = removeAutoresponder(guildId, trigger);
+      const found = getAutoresponder(guildId, trigger);
 
-      await interaction.reply({
-        content: removed
-          ? `removed the autoresponder for ${inlineCode(trigger)}.`
-          : `no autoresponder for ${inlineCode(trigger)} to remove.`,
-      });
+      if (!found) {
+        await interaction.reply({
+          content: `no autoresponder for ${inlineCode(trigger)} to remove.`,
+        });
+        return;
+      }
+
+      removeAutoresponder(guildId, trigger);
+
+      const embed = serverEmbed(interaction.guild).setDescription(
+        `## removed ${inlineCode(found.trigger)} !\n${codeBlock(found.response)}\n-# add it back with ${commandMention('/autoresponders add')}`,
+      );
+      await interaction.reply({ embeds: [embed] });
       return;
     }
 
