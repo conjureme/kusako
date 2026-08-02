@@ -645,6 +645,10 @@ export const items: SlashCommand = {
         ...parse(item.useReply),
       ];
 
+      const wantsEphemeral = nodes.some(
+        (node) => node.kind === 'placeholder' && node.name === 'ephemeral',
+      );
+
       const result = await evaluate(
         nodes,
         {
@@ -658,18 +662,24 @@ export const items: SlashCommand = {
       if (!result.ok) {
         await interaction.reply({
           embeds: [failureEmbed(result.message)],
+          ...(wantsEphemeral ? { flags: MessageFlags.Ephemeral } : {}),
         });
         return;
       }
 
-      const embed = userEmbed(interaction.user)
-        .setTitle('✧･ﾟ item used !')
-        .setDescription(`you use ${item.emoji ?? '📦'} **${item.name}** !`);
-      await interaction.reply({ embeds: [embed] });
+      // the receipt would be public next to a private reply, so the reply
+      // answers to command
+      if (!result.actions.ephemeral) {
+        const embed = userEmbed(interaction.user)
+          .setTitle('✧･ﾟ item used !')
+          .setDescription(`you use ${item.emoji ?? '📦'} **${item.name}** !`);
+        await interaction.reply({ embeds: [embed] });
+      }
 
       await deliver(result.segments, result.actions, {
         member: interaction.member,
         channel,
+        interaction,
       });
       return;
     }

@@ -51,10 +51,17 @@ export async function fireButtonResponder(
     return;
   }
 
-  await interaction.deferUpdate();
+  const nodes = parse(responder.response);
+  const wantsEphemeral = nodes.some(
+    (node) => node.kind === 'placeholder' && node.name === 'ephemeral',
+  );
+
+  // an ephemeral reply needs the token left open for it, and {ephemeral} is
+  // only knowable once the template is parsed, so the defer has to wait
+  if (!wantsEphemeral) await interaction.deferUpdate();
 
   const result = await evaluate(
-    parse(responder.response),
+    nodes,
     {
       member: interaction.member,
       guild: interaction.guild,
@@ -63,17 +70,27 @@ export async function fireButtonResponder(
     responder.triggerKey,
   );
   if (!result.ok) {
-    if (!result.silent) {
-      await interaction.channel.send({
-        embeds: [failureEmbed(result.message)],
-      });
+    if (result.silent) {
+      if (wantsEphemeral) await interaction.deferUpdate();
+      return;
     }
+    if (wantsEphemeral) {
+      await interaction.reply({
+        embeds: [failureEmbed(result.message)],
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+    await interaction.channel.send({
+      embeds: [failureEmbed(result.message)],
+    });
     return;
   }
 
   await deliver(result.segments, result.actions, {
     member: interaction.member,
     channel: interaction.channel,
+    interaction,
   });
 }
 

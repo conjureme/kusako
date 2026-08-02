@@ -103,6 +103,10 @@ export function templateTraits(response: string): {
     badges.push('dms');
     does.push('replies in dms');
   }
+  if (has('ephemeral')) {
+    badges.push('private');
+    does.push('replies privately');
+  }
   if (sendTo) {
     badges.push(`→ ${sendTo}`);
     does.push(`sends to ${sendTo}`);

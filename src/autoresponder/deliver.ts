@@ -2,9 +2,11 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  MessageFlags,
   type GuildMember,
   type GuildTextBasedChannel,
   type Message,
+  type RepliableInteraction,
 } from 'discord.js';
 
 import {
@@ -40,10 +42,55 @@ function buildButtonRows(
   return rows;
 }
 
+async function sendEphemeral(
+  segments: Segment[],
+  buttonRows: ActionRowBuilder<ButtonBuilder>[],
+  interaction: RepliableInteraction,
+): Promise<void> {
+  const content = segments
+    .map((segment) => segment.content)
+    .join('\n')
+    .trim()
+    .slice(0, 2000);
+  const embeds = segments.flatMap((segment) => segment.embeds);
+  if (content.length === 0 && embeds.length === 0 && buttonRows.length === 0) {
+    // a textless {ephemeral} reply (pure {togglerole}, say) still has to answer
+    // the interaction or discord leaves it spinning
+    if (!interaction.deferred && !interaction.replied) {
+      if (interaction.isMessageComponent()) {
+        await interaction.deferUpdate().catch(() => null);
+      } else {
+        await interaction
+          .reply({ content: 'done !', flags: MessageFlags.Ephemeral })
+          .catch(() => null);
+      }
+    }
+    return;
+  }
+
+  const payload = {
+    content: content.length > 0 ? content : undefined,
+    embeds,
+    components: buttonRows,
+    allowedMentions: { parse: [] as const },
+  };
+
+  try {
+    if (interaction.deferred || interaction.replied) {
+      await interaction.followUp({ ...payload, flags: MessageFlags.Ephemeral });
+    } else {
+      await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
+    }
+  } catch (err) {
+    logger.warn({ err }, 'ephemeral reply failed');
+  }
+}
+
 export interface DeliveryTarget {
   member: GuildMember;
   channel: GuildTextBasedChannel;
   triggerMessage?: Message;
+  interaction?: RepliableInteraction;
 }
 
 const DM_FAIL_NOTICE = "i couldn't dm you ! check your privacy settings :c";
@@ -68,7 +115,10 @@ export async function deliver(
     actions.buttons.length > 0 ? buildButtonRows(actions.buttons) : [];
   let buttonsAttached = false;
 
-  if (!destination) {
+  const ephemeral = actions.ephemeral && !actions.dm && target.interaction;
+  if (ephemeral) {
+    await sendEphemeral(segments, buttonRows, target.interaction!);
+  } else if (!destination) {
     if (target.triggerMessage) {
       await target.triggerMessage.reply({
         content: DM_FAIL_NOTICE,

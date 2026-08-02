@@ -1,4 +1,8 @@
-import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import {
+  SlashCommandBuilder,
+  PermissionFlagsBits,
+  MessageFlags,
+} from 'discord.js';
 
 import type { SlashCommand } from '../client.js';
 import { parse } from '../autoresponder/parser.js';
@@ -57,8 +61,13 @@ export const send: SlashCommand = {
       return;
     }
 
+    const nodes = parse(message);
+    const wantsEphemeral = nodes.some(
+      (node) => node.kind === 'placeholder' && node.name === 'ephemeral',
+    );
+
     const result = await evaluate(
-      parse(message),
+      nodes,
       {
         member: interaction.member,
         guild: interaction.guild,
@@ -70,25 +79,29 @@ export const send: SlashCommand = {
     if (!result.ok) {
       await interaction.reply({
         embeds: [failureEmbed(result.message)],
+        ...(wantsEphemeral ? { flags: MessageFlags.Ephemeral } : {}),
       });
       return;
     }
 
-    const destination = result.actions.dm
-      ? 'your dms'
-      : result.actions.sendToChannelId &&
-          result.actions.sendToChannelId !== channel.id
-        ? `<#${result.actions.sendToChannelId}>`
-        : null;
+    if (!result.actions.ephemeral) {
+      const destination = result.actions.dm
+        ? 'your dms'
+        : result.actions.sendToChannelId &&
+            result.actions.sendToChannelId !== channel.id
+          ? `<#${result.actions.sendToChannelId}>`
+          : null;
 
-    const embed = userEmbed(interaction.user).setTitle('✦ sent !');
-    if (destination)
-      embed.setDescription(`your message went to ${destination} !`);
-    await interaction.reply({ embeds: [embed] });
+      const embed = userEmbed(interaction.user).setTitle('✦ sent !');
+      if (destination)
+        embed.setDescription(`your message went to ${destination} !`);
+      await interaction.reply({ embeds: [embed] });
+    }
 
     await deliver(result.segments, result.actions, {
       member: interaction.member,
       channel,
+      interaction,
     });
   },
 };

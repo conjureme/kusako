@@ -58,6 +58,7 @@ export interface MessageActions {
   }>;
   nickActions: Array<{ userId: string; nick: string }>;
   deleteReplyAfter: number | null;
+  ephemeral: boolean;
   buttons: Array<
     | { kind: 'responder'; name: string }
     | { kind: 'link'; label: string; url: string }
@@ -206,6 +207,9 @@ export async function evaluate(
     roleActions: [],
     nickActions: [],
     deleteReplyAfter: null,
+    ephemeral: nodes.some(
+      (node) => node.kind === 'placeholder' && node.name === 'ephemeral',
+    ),
     buttons: [],
   };
 
@@ -391,6 +395,10 @@ export async function evaluate(
     }
 
     if (node.name === 'silent') {
+      continue;
+    }
+
+    if (node.name === 'ephemeral') {
       continue;
     }
 

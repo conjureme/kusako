@@ -13,6 +13,13 @@ const MAX_REACTIONS = 3;
 const MAX_EMBEDS = 3;
 const MAX_ROLE_TAGS = 3;
 
+const EPHEMERAL_CONFLICTS: Array<[string, string]> = [
+  ['delay', 'a private reply only lasts as long as the click does'],
+  ['split', 'a private reply is always one message'],
+  ['delete_reply', "private replies fade on their own, i can't delete them"],
+  ['reactreply', 'nobody can react to a private reply'],
+];
+
 function checkDuration(
   arg: string | undefined,
   tag: string,
@@ -86,6 +93,7 @@ export function validateTemplate(nodes: Node[]): string[] {
   let roleTags = 0;
   let buttons = 0;
   let errorTags = 0;
+  let ephemerals = 0;
 
   for (const node of nodes) {
     if (node.kind === 'capture-ref') {
@@ -200,6 +208,14 @@ export function validateTemplate(nodes: Node[]): string[] {
         errors.push('only one {delete_reply} per autoresponder !');
       }
       checkDuration(node.args[0], 'delete_reply', 1, errors);
+      continue;
+    }
+
+    if (node.name === 'ephemeral') {
+      ephemerals += 1;
+      if (ephemerals === 2) {
+        errors.push('only one {ephemeral} per reply !');
+      }
       continue;
     }
 
@@ -461,6 +477,16 @@ export function validateTemplate(nodes: Node[]): string[] {
     errors.push(
       `that would send more than ${MAX_SEGMENTS} messages ! max is ${MAX_SEGMENTS} (so up to ${MAX_SEGMENTS - 1} {split}/{delay} tags)`,
     );
+  }
+
+  if (ephemerals > 0) {
+    const has = (name: string) =>
+      nodes.some((node) => node.kind === 'placeholder' && node.name === name);
+    for (const [tag, why] of EPHEMERAL_CONFLICTS) {
+      if (has(tag)) {
+        errors.push(`{ephemeral} and {${tag}} can't go together ! ${why}`);
+      }
+    }
   }
 
   return errors;
