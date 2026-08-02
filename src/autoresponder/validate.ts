@@ -108,6 +108,19 @@ export function validateTemplate(nodes: Node[]): string[] {
 
     if (node.kind !== 'placeholder') continue;
 
+    // togglerole is an effect, but it binds its outcome like a generator so
+    // {lockedchoice} can pair text against it. two options: added, removed
+    if (node.name === 'togglerole') {
+      const captureName = node.captureName ?? node.name;
+      if (bound.has(captureName)) {
+        errors.push(
+          `two tags both create [${captureName}]. give one its own name with "as", like {togglerole as something:@stinks}`,
+        );
+      }
+      bound.add(captureName);
+      optionCounts.set(captureName, 2);
+    }
+
     if (generators.has(node.name)) {
       const captureName = node.captureName ?? node.name;
 
@@ -169,7 +182,7 @@ export function validateTemplate(nodes: Node[]): string[] {
       continue;
     }
 
-    if (node.captureName) {
+    if (node.captureName && node.name !== 'togglerole') {
       if (!placeholders.has(node.name)) {
         errors.push(
           `"as ${node.captureName}" doesn't work on {${node.name}}. "as" is only for tags that create a value, like {range}, {choice}, or a {user.*} placeholder !`,
@@ -394,12 +407,13 @@ export function validateTemplate(nodes: Node[]): string[] {
     if (
       node.name === 'giverole' ||
       node.name === 'takerole' ||
-      node.name === 'temprole'
+      node.name === 'temprole' ||
+      node.name === 'togglerole'
     ) {
       roleTags += 1;
       if (roleTags === MAX_ROLE_TAGS + 1) {
         errors.push(
-          `max ${MAX_ROLE_TAGS} {giverole}/{takerole}/{temprole} tags per autoresponder !`,
+          `max ${MAX_ROLE_TAGS} {giverole}/{takerole}/{temprole}/{togglerole} tags per autoresponder !`,
         );
       }
       if ((node.args[0] ?? '').trim().length === 0) {
@@ -416,6 +430,12 @@ export function validateTemplate(nodes: Node[]): string[] {
           '{temprole:@stinky|86400}',
         );
         checkTargetArg(node.args[2], node.name, errors);
+      } else if (node.name === 'togglerole') {
+        if ((node.args[1] ?? '').trim().length > 0) {
+          errors.push(
+            '{togglerole} only works on whoever triggered it, so it takes just a role, like {togglerole:@stinks}',
+          );
+        }
       } else {
         checkTargetArg(node.args[1], node.name, errors);
       }

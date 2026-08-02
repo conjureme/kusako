@@ -86,9 +86,14 @@ export function templateTraits(response: string): {
     badges.push('items');
     does.push('moves items');
   }
-  if (has('giverole') || has('takerole')) {
+  if (has('giverole') || has('takerole') || has('togglerole')) {
     badges.push('roles');
+  }
+  if (has('giverole') || has('takerole')) {
     does.push('gives or takes roles');
+  }
+  if (has('togglerole')) {
+    does.push('toggles a role on or off');
   }
   if (has('temprole')) {
     badges.push('temp roles');

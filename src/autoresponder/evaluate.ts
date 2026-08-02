@@ -448,6 +448,29 @@ export async function evaluate(
       continue;
     }
 
+    if (node.name === 'togglerole') {
+      const role = resolveRoleArg(ctx, args[0] ?? '');
+      if (!role) {
+        current += node.raw;
+        continue;
+      }
+
+      // reading the CURRENT roles here means two {togglerole} tags on the same
+      // role in one template both see the pre-commit state and cancel out,
+      // which is the same "one pass, commit at the end" rule the effects follow
+      const had = ctx.member.roles.cache.has(role.id);
+      actions.roleActions.push({
+        add: !had,
+        roleId: role.id,
+        userId: ctx.member.id,
+      });
+
+      const name = node.captureName ?? node.name;
+      captures.set(name, had ? 'removed' : 'added');
+      captureIndices.set(name, had ? 1 : 0);
+      continue;
+    }
+
     if (node.name === 'setnick') {
       const nick = (args[0] ?? '').trim();
       const targetRaw = (args[1] ?? '').trim();
