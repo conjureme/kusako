@@ -5,6 +5,7 @@ import {
   channelMention,
   codeBlock,
   inlineCode,
+  type Guild,
   type SlashCommandStringOption,
 } from 'discord.js';
 
@@ -21,8 +22,30 @@ import { templateIssues } from '../autoresponder/validate.js';
 import { parse } from '../autoresponder/parser.js';
 import { fireEvent, eventChannelKey } from '../events/guildEvents.js';
 import { serverEmbed, NO_DMS } from '../style.js';
+import { templateDetailEmbed } from './autoresponders.js';
+import { commandMention } from '../commandMentions.js';
 
 const RESPONSE_MAX = 2000;
+
+function eventDetailEmbed(
+  guild: Guild,
+  header: string,
+  response: string,
+  channelId: string | null,
+  notes: string[] = [],
+) {
+  return templateDetailEmbed(guild, header, response, {
+    cooldown: false,
+    notes,
+    fields: [
+      {
+        name: 'goes to',
+        value: channelId ? channelMention(channelId) : 'nowhere yet !',
+        inline: true,
+      },
+    ],
+  });
+}
 
 function eventOption(o: SlashCommandStringOption): SlashCommandStringOption {
   return o
@@ -116,12 +139,14 @@ export const events: SlashCommand = {
         return;
       }
 
+      const existed = getEventResponder(guildId, kind) !== null;
       setEventResponder(guildId, kind, response);
 
+      const channelId = getGuildSetting(guildId, eventChannelKey(kind));
       const notes: string[] = [];
-      if (!getGuildSetting(guildId, eventChannelKey(kind))) {
+      if (!channelId) {
         notes.push(
-          `no channel set for ${kind} yet ! it won't fire until you run ${inlineCode('/events channel')}`,
+          `it won't fire until you pick a channel with ${commandMention('/events channel')} !`,
         );
       }
       if (
@@ -136,7 +161,15 @@ export const events: SlashCommand = {
       }
 
       await interaction.reply({
-        content: [`✦ set the ${kind} reply :3`, ...notes].join('\n'),
+        embeds: [
+          eventDetailEmbed(
+            interaction.guild,
+            `${existed ? 'updated' : 'set'} the ${inlineCode(kind)} reply !`,
+            response,
+            channelId,
+            notes,
+          ),
+        ],
       });
       return;
     }
@@ -145,9 +178,19 @@ export const events: SlashCommand = {
       const channel = interaction.options.getChannel('channel', true);
       setGuildSetting(guildId, eventChannelKey(kind), channel.id);
 
-      await interaction.reply({
-        content: `✦ ${kind} replies will go to ${channel.toString()} !`,
-      });
+      const missing = getEventResponder(guildId, kind) === null;
+      const embed = serverEmbed(interaction.guild).setDescription(
+        [
+          `## ${inlineCode(kind)} goes to ${channel.toString()} !`,
+          missing
+            ? `-# there's no ${inlineCode(kind)} reply yet, so nothing sends until you write one with ${commandMention('/events set')}`
+            : null,
+        ]
+          .filter((line) => line !== null)
+          .join('\n'),
+      );
+
+      await interaction.reply({ embeds: [embed] });
       return;
     }
 
@@ -155,36 +198,45 @@ export const events: SlashCommand = {
       const responder = getEventResponder(guildId, kind);
 
       if (!responder) {
-        await interaction.reply({
-          content: `no ${kind} reply set yet. make one with ${inlineCode('/events set')} !`,
-        });
+        const embed = serverEmbed(interaction.guild).setDescription(
+          `## no ${inlineCode(kind)} reply yet !\nwrite one with ${commandMention('/events set')} and i'll say something when it happens :3`,
+        );
+        await interaction.reply({ embeds: [embed] });
         return;
       }
 
       const channelId = getGuildSetting(guildId, eventChannelKey(kind));
-      const embed = serverEmbed(interaction.guild)
-        .setTitle(`✦ ${kind} reply`)
-        .setDescription(
-          `${codeBlock(responder.response)}\n-# fire it for real with ${inlineCode('/events test')}`,
-        )
-        .addFields({
-          name: 'channel',
-          value: channelId ? `→ ${channelMention(channelId)}` : '→ nowhere !',
-          inline: true,
-        });
-
-      await interaction.reply({ embeds: [embed] });
+      await interaction.reply({
+        embeds: [
+          eventDetailEmbed(
+            interaction.guild,
+            `the ${inlineCode(kind)} reply`,
+            responder.response,
+            channelId,
+            [`fire it for real with ${commandMention('/events test')}`],
+          ),
+        ],
+      });
       return;
     }
 
     if (sub === 'remove' && kind) {
-      const removed = removeEventResponder(guildId, kind);
+      const found = getEventResponder(guildId, kind);
 
-      await interaction.reply({
-        content: removed
-          ? `removed the ${kind} reply.`
-          : `no ${kind} reply to remove.`,
-      });
+      if (!found) {
+        const embed = serverEmbed(interaction.guild).setDescription(
+          `## there's no ${inlineCode(kind)} reply to remove !\nmake one with ${commandMention('/events set')}`,
+        );
+        await interaction.reply({ embeds: [embed] });
+        return;
+      }
+
+      removeEventResponder(guildId, kind);
+
+      const embed = serverEmbed(interaction.guild).setDescription(
+        `## removed the ${inlineCode(kind)} reply !\n${codeBlock(found.response)}\n-# put it back with ${commandMention('/events set')}`,
+      );
+      await interaction.reply({ embeds: [embed] });
       return;
     }
 
@@ -192,7 +244,7 @@ export const events: SlashCommand = {
       const embed = serverEmbed(interaction.guild)
         .setTitle('✦ event replies')
         .setDescription(
-          `-# an event with no channel never fires,, try ${inlineCode('/events test')}`,
+          `-# an event with no channel never fires... try ${commandMention('/events test')}`,
         )
         .addFields(
           EVENT_KINDS.map((eventKind) => {
@@ -220,15 +272,29 @@ export const events: SlashCommand = {
         kind,
       );
 
-      const channelId = getGuildSetting(guildId, eventChannelKey(kind));
-      const replies: Record<typeof outcome, string> = {
-        fired: `✧･ﾟ fired a test ${kind} ! check ${channelId ? channelMention(channelId) : 'the channel'} :3c`,
-        'no-template': `no ${kind} reply set yet. make one with ${inlineCode('/events set')} !`,
-        'no-channel': `no channel for ${kind} yet ! set one with ${inlineCode('/events channel')}`,
-        blocked: `a guard blocked it (a cooldown maybe?), nothing was sent`,
-      };
+      if (outcome.kind === 'fired') {
+        const embed = serverEmbed(interaction.guild).setDescription(
+          [
+            `## fired a test ${inlineCode(kind)} !`,
+            `it went to ${channelMention(outcome.channelId)} :3c`,
+            `-# effects and cooldowns commit for real on tests !`,
+          ].join('\n'),
+        );
+        await interaction.reply({ embeds: [embed] });
+        return;
+      }
 
-      await interaction.reply({ content: replies[outcome] });
+      const excuse =
+        outcome.kind === 'no-template'
+          ? `there's no ${inlineCode(kind)} reply yet ! write one with ${commandMention('/events set')}`
+          : outcome.kind === 'no-channel'
+            ? `${inlineCode(kind)} has nowhere to go ! pick a channel with ${commandMention('/events channel')}`
+            : `something in the reply stopped it, so nothing sent:\n> ${outcome.reason}`;
+
+      const embed = serverEmbed(interaction.guild).setDescription(
+        `## the test didn't fire !\n${excuse}`,
+      );
+      await interaction.reply({ embeds: [embed] });
       return;
     }
   },
