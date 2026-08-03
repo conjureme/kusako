@@ -194,31 +194,45 @@ export function templateTraits(response: string): {
   return { badges, cooldown, does, guards };
 }
 
-export function responderDetailEmbed(
+export function templateDetailEmbed(
   guild: Guild,
   header: string,
-  responder: { response: string; matchMode: MatchMode },
+  response: string,
+  options: {
+    matchMode?: MatchMode;
+    cooldown?: boolean;
+    notes?: string[];
+    fields?: Array<{ name: string; value: string; inline?: boolean }>;
+    footer?: string;
+  } = {},
 ): EmbedBuilder {
-  const traits = templateTraits(responder.response);
-  const hasRequirearg = parse(responder.response).some(
+  const { matchMode, cooldown = true, notes = [], fields = [] } = options;
+  const traits = templateTraits(response);
+  const hasRequirearg = parse(response).some(
     (node) => node.kind === 'placeholder' && node.name === 'requirearg',
   );
-  const warning =
-    responder.matchMode === 'exact' && hasRequirearg
-      ? '\n-# heads up: {requirearg} never passes on exact mode !'
-      : '';
 
-  const embed = serverEmbed(guild)
-    .setDescription(`## ${header}\n${codeBlock(responder.response)}${warning}`)
-    .setFooter({ text: 'docs coming soon !' })
-    .addFields({
-      name: 'match mode',
-      value: responder.matchMode,
-      inline: true,
-    });
-  if (traits.cooldown) {
+  const lines = [...notes];
+  if (matchMode === 'exact' && hasRequirearg) {
+    lines.push('heads up: {requirearg} never passes on exact mode !');
+  }
+  const trailer = lines.map((line) => `\n-# ${line}`).join('');
+
+  const embed = serverEmbed(guild).setDescription(
+    `## ${header}\n${codeBlock(response)}${trailer}`,
+  );
+  if (options.footer !== undefined) {
+    embed.setFooter({ text: options.footer });
+  }
+
+  if (matchMode) {
+    embed.addFields({ name: 'match mode', value: matchMode, inline: true });
+  }
+  if (cooldown && traits.cooldown) {
     embed.addFields({ name: 'cooldown', value: traits.cooldown, inline: true });
   }
+  for (const field of fields) embed.addFields(field);
+
   embed.addFields({
     name: 'only fires',
     value: traits.guards.length > 0 ? traits.guards.join(' · ') : 'always',
@@ -227,6 +241,17 @@ export function responderDetailEmbed(
     embed.addFields({ name: 'does', value: traits.does.join(' · ') });
   }
   return embed;
+}
+
+export function responderDetailEmbed(
+  guild: Guild,
+  header: string,
+  responder: { response: string; matchMode: MatchMode },
+): EmbedBuilder {
+  return templateDetailEmbed(guild, header, responder.response, {
+    matchMode: responder.matchMode,
+    footer: 'docs coming soon !',
+  });
 }
 
 const TRIGGER_MAX = 100;
