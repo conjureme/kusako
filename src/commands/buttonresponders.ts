@@ -22,7 +22,8 @@ import {
   listButtonResponders,
   parseButtonCustomId,
 } from '../autoresponder/store.js';
-import { templateTraits } from './autoresponders.js';
+import { templateTraits, templateDetailEmbed } from './autoresponders.js';
+import { commandMention } from '../commandMentions.js';
 import { templateIssues } from '../autoresponder/validate.js';
 import { parse } from '../autoresponder/parser.js';
 import { evaluate } from '../autoresponder/evaluate.js';
@@ -142,19 +143,40 @@ export async function handleButtonResponderComponents(
     return;
   }
 
+  const doomed = getButtonResponder(interaction.guildId, nameKey);
   const gone = !removeButtonResponder(interaction.guildId, nameKey);
-  await interaction.update({
-    embeds: [
-      serverEmbed(interaction.guild)
-        .setTitle(gone ? '✦ already gone !' : '✦ button responder deleted !')
-        .setDescription(
-          gone
-            ? `${inlineCode(nameKey)} isn't here anymore...`
-            : `deleted the ${inlineCode(nameKey)} button ! old messages carrying it just do nothing now.`,
-        ),
+  const embed = serverEmbed(interaction.guild).setDescription(
+    gone || !doomed
+      ? `## already gone !\n${inlineCode(nameKey)} isn't here anymore...`
+      : [
+          `## deleted the ${inlineCode(doomed.trigger)} button !`,
+          codeBlock(doomed.response),
+          `-# old messages carrying it just do nothing now,, put it back with ${commandMention('/buttonresponders add')}`,
+        ].join('\n'),
+  );
+
+  await interaction.update({ embeds: [embed], components: [] });
+}
+
+function buttonDetailEmbed(
+  guild: Guild,
+  header: string,
+  name: string,
+  response: string,
+  notes: string[] = [],
+) {
+  return templateDetailEmbed(guild, header, response, {
+    notes: [
+      ...notes,
+      `attach it to a reply with ${inlineCode(`{addbutton:${name}}`)} !`,
     ],
-    components: [],
   });
+}
+
+function noButtonEmbed(guild: Guild, name: string) {
+  return serverEmbed(guild).setDescription(
+    `## there's no ${inlineCode(name)} button !\nmake one with ${commandMention('/buttonresponders add')}, or check ${commandMention('/buttonresponders list')} for the ones you have`,
+  );
 }
 
 function brPage(guild: Guild, _userId: string, page: number) {
@@ -164,7 +186,7 @@ function brPage(guild: Guild, _userId: string, page: number) {
     const embed = serverEmbed(guild)
       .setTitle('✦ button responders (0)')
       .setDescription(
-        `none yet ! make one with ${inlineCode('/buttonresponders add')}, then drop ${inlineCode('{addbutton:name}')} in any reply c:`,
+        `none here yet... make one with ${commandMention('/buttonresponders add')}, then drop ${inlineCode('{addbutton:name}')} in any reply !!`,
       );
 
     return { embeds: [embed], components: [] };
@@ -312,18 +334,23 @@ export const buttonresponders: SlashCommand = {
 
       if (!addButtonResponder(guildId, name, reply)) {
         await interaction.reply({
-          content: `a button called ${inlineCode(name)} already exists ! edit it or pick another name c:`,
+          embeds: [
+            serverEmbed(interaction.guild).setDescription(
+              `## ${inlineCode(name)} already exists !\nchange it with ${commandMention('/buttonresponders edit')}, or pick another name c:`,
+            ),
+          ],
         });
         return;
       }
 
       await interaction.reply({
         embeds: [
-          serverEmbed(interaction.guild)
-            .setTitle('✦ button responder made !')
-            .setDescription(
-              `now drop ${inlineCode(`{addbutton:${name}}`)} into any reply (an autoresponder, an event, /send...) and clicking it fires this !`,
-            ),
+          buttonDetailEmbed(
+            interaction.guild,
+            `made the ${inlineCode(name)} button !`,
+            name,
+            reply,
+          ),
         ],
       });
       return;
@@ -339,16 +366,19 @@ export const buttonresponders: SlashCommand = {
 
       if (!editButtonResponder(guildId, name, reply)) {
         await interaction.reply({
-          content: `there's no button called ${inlineCode(name)} yet !`,
+          embeds: [noButtonEmbed(interaction.guild, name)],
         });
         return;
       }
 
       await interaction.reply({
         embeds: [
-          serverEmbed(interaction.guild)
-            .setTitle('✦ button responder updated !')
-            .setDescription(`${inlineCode(name)} fires a new reply now c:`),
+          buttonDetailEmbed(
+            interaction.guild,
+            `updated the ${inlineCode(name)} button !`,
+            name,
+            reply,
+          ),
         ],
       });
       return;
@@ -358,24 +388,21 @@ export const buttonresponders: SlashCommand = {
       const responder = getButtonResponder(guildId, name);
       if (!responder) {
         await interaction.reply({
-          content: `there's no button called ${inlineCode(name)} !`,
+          embeds: [noButtonEmbed(interaction.guild, name)],
         });
         return;
       }
 
-      const { badges } = templateTraits(responder.response);
-      const embed = serverEmbed(interaction.guild)
-        .setTitle(`✦ ${responder.trigger}`)
-        .setDescription(codeBlock(responder.response))
-        .addFields({
-          name: 'does',
-          value: badges.length > 0 ? badges.join(' · ') : 'just a message',
-        })
-        .setFooter({
-          text: `attach it with {addbutton:${responder.trigger}}`,
-        });
-
-      await interaction.reply({ embeds: [embed] });
+      await interaction.reply({
+        embeds: [
+          buttonDetailEmbed(
+            interaction.guild,
+            `the ${inlineCode(responder.trigger)} button`,
+            responder.trigger,
+            responder.response,
+          ),
+        ],
+      });
       return;
     }
 
@@ -383,18 +410,20 @@ export const buttonresponders: SlashCommand = {
       const responder = getButtonResponder(guildId, name);
       if (!responder) {
         await interaction.reply({
-          content: `there's no button called ${inlineCode(name)} !`,
+          embeds: [noButtonEmbed(interaction.guild, name)],
         });
         return;
       }
 
       await interaction.reply({
         embeds: [
-          serverEmbed(interaction.guild)
-            .setTitle('✦ delete this button responder ?')
-            .setDescription(
-              `**${responder.trigger}**\n\nany message still carrying this button will just stop doing anything on click. no undo !`,
-            ),
+          serverEmbed(interaction.guild).setDescription(
+            [
+              `## delete the ${inlineCode(responder.trigger)} button ?`,
+              codeBlock(responder.response),
+              `-# any message still carrying this button just stops doing anything on click. there's no undo,,,, copy the reply above if you might want it back !`,
+            ].join('\n'),
+          ),
         ],
         components: [confirmRow(responder.trigger.toLowerCase())],
       });
