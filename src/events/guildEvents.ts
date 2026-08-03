@@ -8,7 +8,11 @@ import { evaluate } from '../autoresponder/evaluate.js';
 import { deliver } from '../autoresponder/deliver.js';
 import { logger } from '../logger.js';
 
-export type FireOutcome = 'fired' | 'no-template' | 'no-channel' | 'blocked';
+export type FireOutcome =
+  | { kind: 'fired'; channelId: string }
+  | { kind: 'no-template' }
+  | { kind: 'no-channel' }
+  | { kind: 'blocked'; reason: string };
 
 export { eventChannelKey };
 
@@ -18,21 +22,21 @@ export async function fireEvent(
   kind: EventKind,
 ): Promise<FireOutcome> {
   const responder = getEventResponder(guild.id, kind);
-  if (!responder) return 'no-template';
+  if (!responder) return { kind: 'no-template' };
 
   const channelId = getGuildSetting(guild.id, eventChannelKey(kind));
   const channel = channelId ? guild.channels.cache.get(channelId) : null;
-  if (!channel || !channel.isTextBased()) return 'no-channel';
+  if (!channel || !channel.isTextBased()) return { kind: 'no-channel' };
 
   const result = await evaluate(
     parse(responder.response),
     { member, guild, channel },
     responder.triggerKey,
   );
-  if (!result.ok) return 'blocked';
+  if (!result.ok) return { kind: 'blocked', reason: result.message };
 
   await deliver(result.segments, result.actions, { member, channel });
-  return 'fired';
+  return { kind: 'fired', channelId: channel.id };
 }
 
 export function registerGuildEvents(client: SakoClient): void {
