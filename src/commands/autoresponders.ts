@@ -257,6 +257,12 @@ export function responderDetailEmbed(
 const TRIGGER_MAX = 100;
 const RESPONSE_MAX = 2000;
 
+function noResponderEmbed(guild: Guild, trigger: string) {
+  return serverEmbed(guild).setDescription(
+    `## there's no ${inlineCode(trigger)} autoresponder !\nmake one with ${commandMention('/autoresponders add')}, or check ${commandMention('/autoresponders list')} for the ones you have`,
+  );
+}
+
 const MATCH_CHOICES = [
   { name: 'exact (message equals the trigger)', value: 'exact' },
   { name: 'starts with (whole word at the start)', value: 'startswith' },
@@ -435,15 +441,17 @@ export const autoresponders: SlashCommand = {
       const response = interaction.options.getString('reply', true);
 
       const lowerTrigger = trigger.trim().toLowerCase();
-      if (lowerTrigger.startsWith('event:')) {
+      const reserved = (['event', 'button'] as const).find((prefix) =>
+        lowerTrigger.startsWith(`${prefix}:`),
+      );
+      if (reserved) {
+        const owner = reserved === 'event' ? '/events' : '/buttonresponders';
         await interaction.reply({
-          content: `trigger names starting with ${inlineCode('event:')} are reserved for ${inlineCode('/events')} !`,
-        });
-        return;
-      }
-      if (lowerTrigger.startsWith('button:')) {
-        await interaction.reply({
-          content: `trigger names starting with ${inlineCode('button:')} are reserved for ${inlineCode('/buttonresponders')} !`,
+          embeds: [
+            serverEmbed(interaction.guild).setDescription(
+              `## ${inlineCode(`${reserved}:`)} triggers are reserved !\nthose belong to ${commandMention(owner)},,,, pick another name for this one pls`,
+            ),
+          ],
         });
         return;
       }
@@ -469,7 +477,11 @@ export const autoresponders: SlashCommand = {
 
       if (!created) {
         await interaction.reply({
-          content: `an autoresponder for ${inlineCode(trigger)} already exists. use ${inlineCode('/autoresponders edit')} to change it.`,
+          embeds: [
+            serverEmbed(interaction.guild).setDescription(
+              `## ${inlineCode(trigger)} already exists !\nchange it with ${commandMention('/autoresponders edit')}, or pick another trigger c:`,
+            ),
+          ],
         });
         return;
       }
@@ -502,7 +514,7 @@ export const autoresponders: SlashCommand = {
 
       if (!edited) {
         await interaction.reply({
-          content: `no autoresponder for ${inlineCode(trigger)} exists yet. use ${inlineCode('/autoresponders add')} to make one.`,
+          embeds: [noResponderEmbed(interaction.guild, trigger)],
         });
         return;
       }
@@ -526,10 +538,22 @@ export const autoresponders: SlashCommand = {
 
       const changed = setMatchMode(guildId, trigger, mode);
 
+      if (!changed) {
+        await interaction.reply({
+          embeds: [noResponderEmbed(interaction.guild, trigger)],
+        });
+        return;
+      }
+
+      const updated = getAutoresponder(guildId, trigger)!;
       await interaction.reply({
-        content: changed
-          ? `${inlineCode(trigger)} now matches as ${inlineCode(mode)} c:`
-          : `no autoresponder for ${inlineCode(trigger)} exists yet. use ${inlineCode('/autoresponders add')} to make one.`,
+        embeds: [
+          responderDetailEmbed(
+            interaction.guild,
+            `${inlineCode(updated.trigger)} matches as ${inlineCode(mode)} now !`,
+            updated,
+          ),
+        ],
       });
       return;
     }
@@ -540,7 +564,7 @@ export const autoresponders: SlashCommand = {
 
       if (!found) {
         await interaction.reply({
-          content: `no autoresponder for ${inlineCode(trigger)} to remove.`,
+          embeds: [noResponderEmbed(interaction.guild, trigger)],
         });
         return;
       }
@@ -567,38 +591,27 @@ export const autoresponders: SlashCommand = {
 
       if (!found) {
         await interaction.reply({
-          content: `no autoresponder for ${inlineCode(trigger)} found.`,
+          embeds: [noResponderEmbed(interaction.guild, trigger)],
         });
         return;
       }
 
-      const traits = templateTraits(found.response);
-      const embed = serverEmbed(interaction.guild)
-        .setTitle(`✦ ${found.trigger}`)
-        .setDescription(
-          `${codeBlock(found.response)}\n-# change matching with ${inlineCode('/autoresponders matchmode')}`,
-        )
-        .addFields({
-          name: 'match mode',
-          value: found.matchMode,
-          inline: true,
-        });
-      if (traits.cooldown) {
-        embed.addFields({
-          name: 'cooldown',
-          value: traits.cooldown,
-          inline: true,
-        });
-      }
-      if (traits.does.length > 0) {
-        embed.addFields({
-          name: 'does',
-          value: traits.does.join('\n'),
-          inline: true,
-        });
-      }
-
-      await interaction.reply({ embeds: [embed] });
+      await interaction.reply({
+        embeds: [
+          templateDetailEmbed(
+            interaction.guild,
+            inlineCode(found.trigger),
+            found.response,
+            {
+              matchMode: found.matchMode,
+              notes: [
+                `change how it matches with ${commandMention('/autoresponders matchmode')}`,
+              ],
+              footer: 'docs coming soon !',
+            },
+          ),
+        ],
+      });
       return;
     }
   },
