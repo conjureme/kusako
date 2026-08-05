@@ -1,4 +1,5 @@
 import { db } from '../db.js';
+import type { EventKind } from '../events/registry.js';
 
 export type MatchMode =
   | 'exact'
@@ -6,9 +7,6 @@ export type MatchMode =
   | 'endswith'
   | 'includes'
   | 'event';
-
-export const EVENT_KINDS = ['join', 'leave', 'boost'] as const;
-export type EventKind = (typeof EVENT_KINDS)[number];
 
 export function eventTriggerKey(kind: EventKind): string {
   return `event:${kind}`;

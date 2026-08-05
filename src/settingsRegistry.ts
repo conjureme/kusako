@@ -4,7 +4,8 @@ import { getCurrency } from './economy.js';
 import { getPatSettings, isGameEnabled } from './games.js';
 import { isLevelingEnabled } from './levels.js';
 import { getGuildSetting, eventChannelKey } from './settings.js';
-import { getEventResponder, EVENT_KINDS } from './autoresponder/store.js';
+import { getEventResponder } from './autoresponder/store.js';
+import { EVENTS } from './events/registry.js';
 import { formatDuration } from './autoresponder/args.js';
 
 export interface SettingEntry {
@@ -72,16 +73,16 @@ export const SETTINGS: SettingEntry[] = [
       return [isLevelingEnabled(guildId) ? 'on' : 'off'];
     },
   },
-  ...EVENT_KINDS.map((kind) => ({
-    id: `event:${kind}`,
+  ...EVENTS.map((event) => ({
+    id: `event:${event.id}`,
     group: 'events',
-    label: kind,
-    blurb: `what sako says when someone ${kind === 'join' ? 'joins' : kind === 'leave' ? 'leaves' : 'boosts'} !`,
+    label: event.label,
+    blurb: event.blurb,
     command: '/events set',
     knobs: ['reply', 'channel'],
     render(guildId: string): string[] {
-      const responder = getEventResponder(guildId, kind);
-      const channelId = getGuildSetting(guildId, eventChannelKey(kind));
+      const responder = getEventResponder(guildId, event.id);
+      const channelId = getGuildSetting(guildId, eventChannelKey(event.id));
       return [
         responder ? 'reply set' : 'no reply yet',
         channelId ? `→ ${channelMention(channelId)}` : '→ nowhere !',

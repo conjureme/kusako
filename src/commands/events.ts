@@ -14,9 +14,8 @@ import {
   setEventResponder,
   getEventResponder,
   removeEventResponder,
-  EVENT_KINDS,
-  type EventKind,
 } from '../autoresponder/store.js';
+import { EVENTS, type EventKind } from '../events/registry.js';
 import { getGuildSetting, setGuildSetting } from '../settings.js';
 import { templateIssues } from '../autoresponder/validate.js';
 import { parse } from '../autoresponder/parser.js';
@@ -53,9 +52,7 @@ function eventOption(o: SlashCommandStringOption): SlashCommandStringOption {
     .setDescription('which event')
     .setRequired(true)
     .addChoices(
-      { name: 'join', value: 'join' },
-      { name: 'leave', value: 'leave' },
-      { name: 'boost', value: 'boost' },
+      ...EVENTS.map((event) => ({ name: event.label, value: event.id })),
     );
 }
 
@@ -247,14 +244,14 @@ export const events: SlashCommand = {
           `-# an event with no channel never fires... try ${commandMention('/events test')}`,
         )
         .addFields(
-          EVENT_KINDS.map((eventKind) => {
-            const responder = getEventResponder(guildId, eventKind);
+          EVENTS.map((event) => {
+            const responder = getEventResponder(guildId, event.id);
             const channelId = getGuildSetting(
               guildId,
-              eventChannelKey(eventKind),
+              eventChannelKey(event.id),
             );
             return {
-              name: eventKind,
+              name: event.label,
               value: `${responder ? '✓ reply set' : '✗ no reply'}\n${channelId ? `→ ${channelMention(channelId)}` : '→ nowhere !'}`,
               inline: true,
             };

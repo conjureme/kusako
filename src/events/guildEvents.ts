@@ -1,7 +1,8 @@
-import { Events, type Guild, type GuildMember } from 'discord.js';
+import { type Guild, type GuildMember } from 'discord.js';
 
 import type { SakoClient } from '../client.js';
-import { getEventResponder, type EventKind } from '../autoresponder/store.js';
+import { getEventResponder } from '../autoresponder/store.js';
+import { EVENTS, type EventKind } from './registry.js';
 import { getGuildSetting, eventChannelKey } from '../settings.js';
 import { parse } from '../autoresponder/parser.js';
 import { evaluate } from '../autoresponder/evaluate.js';
@@ -40,28 +41,17 @@ export async function fireEvent(
 }
 
 export function registerGuildEvents(client: SakoClient): void {
-  client.on(Events.GuildMemberAdd, async (member) => {
-    try {
-      await fireEvent(member.guild, member, 'join');
-    } catch (err) {
-      logger.error({ err, guild: member.guild.id }, 'join event failed');
-    }
-  });
-
-  client.on(Events.GuildMemberRemove, async (member) => {
-    try {
-      await fireEvent(member.guild, member as GuildMember, 'leave');
-    } catch (err) {
-      logger.error({ err, guild: member.guild.id }, 'leave event failed');
-    }
-  });
-
-  client.on(Events.GuildMemberUpdate, async (oldMember, newMember) => {
-    if (oldMember.premiumSince || !newMember.premiumSince) return;
-    try {
-      await fireEvent(newMember.guild, newMember, 'boost');
-    } catch (err) {
-      logger.error({ err, guild: newMember.guild.id }, 'boost event failed');
-    }
-  });
+  for (const definition of EVENTS) {
+    definition.register(client, async (guild, member) => {
+      try {
+        return await fireEvent(guild, member, definition.id);
+      } catch (err) {
+        logger.error(
+          { err, guild: guild.id, event: definition.id },
+          'event failed',
+        );
+        return null;
+      }
+    });
+  }
 }
