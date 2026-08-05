@@ -22,6 +22,7 @@ import { templateIssues } from '../autoresponder/validate.js';
 import { parse } from '../autoresponder/parser.js';
 import { parseAmount, formatDuration } from '../autoresponder/args.js';
 import type { PlaceholderNode } from '../autoresponder/ast.js';
+import { isLevelingEnabled } from '../levels.js';
 import { serverEmbed, NO_DMS } from '../style.js';
 import { commandMention } from '../commandMentions.js';
 import { paginate, applyPage } from '../pagination.js';
@@ -159,6 +160,8 @@ export function templateTraits(response: string): {
     const arg = (node.args[0] ?? '').trim();
     if (node.name === 'requirebal') {
       guards.push(`${amountBadge(arg)}+ balance`);
+    } else if (node.name === 'requirelevel') {
+      guards.push(`level ${arg}+`);
     } else if (node.name === 'requireitem') {
       const qty = (node.args[1] ?? '').trim();
       guards.push(qty.length > 0 ? `needs ${qty}× ${arg}` : `needs ${arg}`);
@@ -208,13 +211,20 @@ export function templateDetailEmbed(
 ): EmbedBuilder {
   const { matchMode, cooldown = true, notes = [], fields = [] } = options;
   const traits = templateTraits(response);
-  const hasRequirearg = parse(response).some(
-    (node) => node.kind === 'placeholder' && node.name === 'requirearg',
+  const tags = new Set(
+    parse(response)
+      .filter((node): node is PlaceholderNode => node.kind === 'placeholder')
+      .map((node) => node.name),
   );
 
   const lines = [...notes];
-  if (matchMode === 'exact' && hasRequirearg) {
+  if (matchMode === 'exact' && tags.has('requirearg')) {
     lines.push('heads up: {requirearg} never passes on exact mode !');
+  }
+  if (tags.has('requirelevel') && !isLevelingEnabled(guild.id)) {
+    lines.push(
+      "heads up: leveling is off, so nobody's earning xp for {requirelevel} to check !",
+    );
   }
   const trailer = lines.map((line) => `\n-# ${line}`).join('');
 

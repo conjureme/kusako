@@ -2,6 +2,7 @@ import { PermissionFlagsBits, type PermissionsString } from 'discord.js';
 
 import { getBalance, getCurrency } from '../economy.js';
 import { getItem, getQuantity } from '../items.js';
+import { getXp, levelFromXp } from '../levels.js';
 import type { EvalMeta, RenderContext } from './context.js';
 import { parseAmount } from './args.js';
 
@@ -20,6 +21,9 @@ export const FAILURE_CAPTURES = new Set<string>([
   'requireitem.needed',
   'requireitem.have',
   'requireitem.short',
+  'requirelevel.needed',
+  'requirelevel.have',
+  'requirelevel.short',
   'requirearg.needed',
   'requirearg.have',
   'requirearg.type',
@@ -194,6 +198,31 @@ export const guards = new Map<string, Guard>([
           'requireitem.needed': quantity.toLocaleString('en-US'),
           'requireitem.have': have.toLocaleString('en-US'),
           'requireitem.short': (quantity - have).toLocaleString('en-US'),
+        },
+      };
+    },
+  ],
+  [
+    'requirelevel',
+    (meta, args) => {
+      const level = parseAmount(args[0] ?? '');
+      if (level === null || level <= 0) {
+        return {
+          ok: false,
+          message: 'this autoresponder has a broken {requirelevel} tag !',
+        };
+      }
+
+      const current = levelFromXp(getXp(meta.guildId, meta.userId));
+      if (current >= level) return { ok: true };
+
+      return {
+        ok: false,
+        message: `you need to be **level ${level}** for that,, you're only level ${current} !`,
+        data: {
+          'requirelevel.needed': String(level),
+          'requirelevel.have': String(current),
+          'requirelevel.short': String(level - current),
         },
       };
     },

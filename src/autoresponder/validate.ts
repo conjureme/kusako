@@ -4,6 +4,7 @@ import { generators, RANGE_FORMAT, WEIGHTED_OPTION } from './generators.js';
 import { parseAmount, DYNAMIC_ARG, YEAR_SECONDS } from './args.js';
 import { parseColor } from '../embeds.js';
 import { ARG_TYPES, resolvePermArg, FAILURE_CAPTURES } from './guards.js';
+import { MAX_LEVEL } from '../levels.js';
 import { placeholders, targetArgIndex } from './placeholders.js';
 import { MAX_BUTTONS } from './evaluate.js';
 import { URLISH } from '../embeds.js';
@@ -281,6 +282,15 @@ export function validateTemplate(nodes: Node[]): string[] {
 
     if (node.name === 'requirebal') {
       checkAmount(node.args[0], 'requirebal', false, errors);
+      continue;
+    }
+
+    if (node.name === 'requirelevel') {
+      checkAmount(node.args[0], 'requirelevel', false, errors);
+      const level = parseAmount(node.args[0] ?? '');
+      if (level !== null && level > MAX_LEVEL) {
+        errors.push(`{requirelevel} can't go past level ${MAX_LEVEL} !`);
+      }
       continue;
     }
 
