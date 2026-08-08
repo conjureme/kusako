@@ -28,7 +28,7 @@ import {
   type FailureData,
 } from './guards.js';
 import { effects, pendingOf, EffectError } from './effects.js';
-import { getCooldownRemaining, setCooldown } from './cooldowns.js';
+import { getCooldownRemaining, setCooldown } from '../cooldowns.js';
 import {
   interpolateArgs,
   parseAmount,
@@ -175,12 +175,12 @@ async function renderEmbed(
 export async function evaluate(
   nodes: Node[],
   ctx: RenderContext,
-  triggerKey: string,
+  scope: string,
 ): Promise<EvalResult> {
   const meta: EvalMeta = {
     guildId: ctx.guild.id,
     userId: ctx.member.id,
-    triggerKey,
+    scope,
   };
 
   const pending = new PendingEffects();
@@ -322,7 +322,7 @@ export async function evaluate(
 
       const remaining = getCooldownRemaining(
         meta.guildId,
-        meta.triggerKey,
+        meta.scope,
         meta.userId,
       );
       if (remaining > 0) {
@@ -576,12 +576,7 @@ export async function evaluate(
           effects.get(queued.name)!(meta, queued.args);
         }
         if (cooldownSeconds !== null) {
-          setCooldown(
-            meta.guildId,
-            meta.triggerKey,
-            meta.userId,
-            cooldownSeconds,
-          );
+          setCooldown(meta.guildId, meta.scope, meta.userId, cooldownSeconds);
         }
       })();
     } catch (err) {

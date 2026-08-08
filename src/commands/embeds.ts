@@ -34,7 +34,7 @@ import {
   type EmbedRecord,
 } from '../embeds.js';
 import { colors, serverEmbed, NO_DMS } from '../style.js';
-import { listAllTemplates } from '../autoresponder/store.js';
+import { listAllTemplates } from '../templates.js';
 import { listItems } from '../items.js';
 import { parse } from '../autoresponder/parser.js';
 import type { PlaceholderNode } from '../autoresponder/ast.js';
@@ -243,17 +243,7 @@ function usageIndex(guildId: string): Map<string, EmbedUsage> {
   const index = new Map<string, EmbedUsage>();
   let dynamic = 0;
 
-  const sources = [
-    ...listAllTemplates(guildId),
-    ...listItems(guildId)
-      .filter((item) => item.useReply)
-      .map((item) => ({
-        label: `${item.name} (item)`,
-        response: item.useReply!,
-      })),
-  ];
-
-  for (const source of sources) {
+  for (const source of listAllTemplates(guildId)) {
     const names = parse(source.response)
       .filter(
         (node): node is PlaceholderNode =>

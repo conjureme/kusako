@@ -14,7 +14,7 @@ import {
   scheduleDeletion,
   scheduleRoleRemoval,
 } from '../scheduler.js';
-import { buttonCustomId } from './store.js';
+import { buttonCustomId } from '../buttonResponders.js';
 import { logger } from '../logger.js';
 import type { Segment, MessageActions } from './evaluate.js';
 

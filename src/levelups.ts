@@ -1,22 +1,11 @@
 import type { GuildMember, GuildTextBasedChannel } from 'discord.js';
 
-import { getLevelResponder } from './autoresponder/store.js';
+import { getLevelReply } from './levels.js';
+import { levelScope } from './cooldowns.js';
 import { parse } from './autoresponder/parser.js';
 import { evaluate } from './autoresponder/evaluate.js';
 import { deliver } from './autoresponder/deliver.js';
 import { logger } from './logger.js';
-
-export function countLevelResponders(
-  guildId: string,
-  fromLevel: number,
-  toLevel: number,
-): number {
-  let count = 0;
-  for (let level = fromLevel + 1; level <= toLevel; level += 1) {
-    if (getLevelResponder(guildId, level)) count += 1;
-  }
-  return count;
-}
 
 export async function fireLevelUps(
   member: GuildMember,
@@ -25,14 +14,14 @@ export async function fireLevelUps(
   toLevel: number,
 ): Promise<void> {
   for (let level = fromLevel + 1; level <= toLevel; level += 1) {
-    const responder = getLevelResponder(member.guild.id, level);
-    if (!responder) continue;
+    const reply = getLevelReply(member.guild.id, level);
+    if (!reply) continue;
 
     try {
       const result = await evaluate(
-        parse(responder.response),
+        parse(reply.response),
         { member, guild: member.guild, channel },
-        responder.triggerKey,
+        levelScope(level),
       );
       if (!result.ok) continue;
 

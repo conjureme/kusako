@@ -64,7 +64,7 @@ export const effects = new Map<string, Effect>([
         meta.guildId,
         targetId,
         amount,
-        `autoresponder ${meta.triggerKey}`,
+        `autoresponder ${meta.scope}`,
       );
 
       if (!result.ok) {

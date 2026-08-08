@@ -21,7 +21,9 @@ import {
   removeButtonResponder,
   listButtonResponders,
   parseButtonCustomId,
-} from '../autoresponder/store.js';
+  buttonKey,
+} from '../buttonResponders.js';
+import { buttonScope } from '../cooldowns.js';
 import { templateTraits, templateDetailEmbed } from './autoresponders.js';
 import { commandMention } from '../commandMentions.js';
 import { templateIssues } from '../autoresponder/validate.js';
@@ -68,7 +70,7 @@ export async function fireButtonResponder(
       guild: interaction.guild,
       channel: interaction.channel,
     },
-    responder.triggerKey,
+    buttonScope(responder.nameKey),
   );
   if (!result.ok) {
     if (result.silent) {
@@ -149,7 +151,7 @@ export async function handleButtonResponderComponents(
     gone || !doomed
       ? `## already gone !\n${inlineCode(nameKey)} isn't here anymore...`
       : [
-          `## deleted the ${inlineCode(doomed.trigger)} button !`,
+          `## deleted the ${inlineCode(doomed.name)} button !`,
           codeBlock(doomed.response),
           `-# old messages carrying it just do nothing now,, put it back with ${commandMention('/buttonresponders add')}`,
         ].join('\n'),
@@ -195,8 +197,8 @@ function brPage(guild: Guild, _userId: string, page: number) {
   const header = `꒰ button responders ꒱ *${all.length} of them !*`;
   const hint = `⁀જ➣ attach one with ${inlineCode('{addbutton:name}')} in any reply`;
 
-  const blocks = all.map(({ name, responder }) => {
-    const { badges } = templateTraits(responder.response);
+  const blocks = all.map(({ name, response }) => {
+    const { badges } = templateTraits(response);
     const summary = badges.length > 0 ? badges.join(' · ') : 'just a message';
     return `ᯓ➤ **${name}**\n-# ✧ ${summary}`;
   });
@@ -220,9 +222,9 @@ async function respondWithButtonNames(
 
   const focused = interaction.options.getFocused().toLowerCase();
   const choices = listButtonResponders(interaction.guildId)
-    .filter(({ name }) => name.toLowerCase().includes(focused))
+    .filter((responder) => responder.nameKey.includes(focused))
     .slice(0, 25)
-    .map(({ name }) => ({ name, value: name }));
+    .map((responder) => ({ name: responder.name, value: responder.name }));
 
   await interaction.respond(choices);
 }
@@ -397,8 +399,8 @@ export const buttonresponders: SlashCommand = {
         embeds: [
           buttonDetailEmbed(
             interaction.guild,
-            `the ${inlineCode(responder.trigger)} button`,
-            responder.trigger,
+            `the ${inlineCode(responder.name)} button`,
+            responder.name,
             responder.response,
           ),
         ],
@@ -419,13 +421,13 @@ export const buttonresponders: SlashCommand = {
         embeds: [
           serverEmbed(interaction.guild).setDescription(
             [
-              `## delete the ${inlineCode(responder.trigger)} button ?`,
+              `## delete the ${inlineCode(responder.name)} button ?`,
               codeBlock(responder.response),
               `-# any message still carrying this button just stops doing anything on click. there's no undo,,,, copy the reply above if you might want it back !`,
             ].join('\n'),
           ),
         ],
-        components: [confirmRow(responder.trigger.toLowerCase())],
+        components: [confirmRow(responder.name.toLowerCase())],
       });
       return;
     }

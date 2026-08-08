@@ -7,14 +7,15 @@ import {
 } from 'discord.js';
 
 import type { SlashCommand } from '../client.js';
-import {
-  setLevelResponder,
-  getLevelResponder,
-  removeLevelResponder,
-  listLevelResponders,
-} from '../autoresponder/store.js';
 import { templateIssues } from '../autoresponder/validate.js';
-import { isLevelingEnabled, MAX_LEVEL } from '../levels.js';
+import {
+  isLevelingEnabled,
+  MAX_LEVEL,
+  getLevelReply,
+  setLevelReply,
+  removeLevelReply,
+  listLevelReplies,
+} from '../levels.js';
 import { serverEmbed, NO_DMS } from '../style.js';
 import { templateTraits, templateDetailEmbed } from './autoresponders.js';
 import { commandMention } from '../commandMentions.js';
@@ -49,7 +50,7 @@ function levelDetailEmbed(
 }
 
 function levelsPage(guild: Guild, _userId: string, page: number) {
-  const entries = listLevelResponders(guild.id);
+  const entries = listLevelReplies(guild.id);
 
   if (entries.length === 0) {
     const embed = serverEmbed(guild)
@@ -65,8 +66,8 @@ function levelsPage(guild: Guild, _userId: string, page: number) {
     ? null
     : `-# leveling is off,, none of these fire until ${commandMention('/settings set levels')}`;
 
-  const blocks = entries.map(({ level, responder }) => {
-    const badges = templateTraits(responder.response).badges;
+  const blocks = entries.map(({ level, response }) => {
+    const badges = templateTraits(response).badges;
     const summary = badges.length ? badges.join(' · ') : 'just a message';
     return `ᯓ➤ **level ${level}**\n-# ✧ ${summary}`;
   });
@@ -143,7 +144,7 @@ export const levels: SlashCommand = {
     }
 
     const query = interaction.options.getFocused();
-    const entries = listLevelResponders(interaction.guildId)
+    const entries = listLevelReplies(interaction.guildId)
       .filter((entry) => entry.level.toString().startsWith(query))
       .slice(0, 25)
       .map((entry) => ({
@@ -175,8 +176,8 @@ export const levels: SlashCommand = {
         return;
       }
 
-      const existed = getLevelResponder(guildId, level) !== null;
-      setLevelResponder(guildId, level, reply);
+      const existed = getLevelReply(guildId, level) !== null;
+      setLevelReply(guildId, level, reply);
 
       await interaction.reply({
         embeds: [
@@ -193,9 +194,9 @@ export const levels: SlashCommand = {
 
     if (sub === 'show') {
       const level = interaction.options.getInteger('level', true);
-      const responder = getLevelResponder(guildId, level);
+      const stored = getLevelReply(guildId, level);
 
-      if (!responder) {
+      if (!stored) {
         const embed = serverEmbed(interaction.guild).setDescription(
           `## level ${level} doesn't have a reply !\nwrite one with ${commandMention('/levels set')} and i'll celebrate when someone gets there :3`,
         );
@@ -209,7 +210,7 @@ export const levels: SlashCommand = {
             interaction.guild,
             `the level ${level} reply`,
             level,
-            responder.response,
+            stored.response,
           ),
         ],
       });
@@ -218,7 +219,7 @@ export const levels: SlashCommand = {
 
     if (sub === 'remove') {
       const level = interaction.options.getInteger('level', true);
-      const found = getLevelResponder(guildId, level);
+      const found = getLevelReply(guildId, level);
 
       if (!found) {
         const embed = serverEmbed(interaction.guild).setDescription(
@@ -228,7 +229,7 @@ export const levels: SlashCommand = {
         return;
       }
 
-      removeLevelResponder(guildId, level);
+      removeLevelReply(guildId, level);
 
       const embed = serverEmbed(interaction.guild).setDescription(
         `## removed the level ${level} reply !\n${codeBlock(found.response)}\n-# level ${level} goes by quietly now,, put it back with ${commandMention('/levels set')}`,

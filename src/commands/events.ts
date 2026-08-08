@@ -11,15 +11,15 @@ import {
 
 import type { SlashCommand } from '../client.js';
 import {
-  setEventResponder,
-  getEventResponder,
-  removeEventResponder,
-} from '../autoresponder/store.js';
+  setEventReply,
+  getEventReply,
+  setEventChannel,
+  removeEventReply,
+} from '../events/store.js';
 import { EVENTS, type EventKind } from '../events/registry.js';
-import { getGuildSetting, setGuildSetting } from '../settings.js';
 import { templateIssues } from '../autoresponder/validate.js';
 import { parse } from '../autoresponder/parser.js';
-import { fireEvent, eventChannelKey } from '../events/guildEvents.js';
+import { fireEvent } from '../events/guildEvents.js';
 import { serverEmbed, NO_DMS } from '../style.js';
 import { templateDetailEmbed } from './autoresponders.js';
 import { commandMention } from '../commandMentions.js';
@@ -136,10 +136,10 @@ export const events: SlashCommand = {
         return;
       }
 
-      const existed = getEventResponder(guildId, kind) !== null;
-      setEventResponder(guildId, kind, response);
+      const existed = getEventReply(guildId, kind)?.response != null;
+      setEventReply(guildId, kind, response);
 
-      const channelId = getGuildSetting(guildId, eventChannelKey(kind));
+      const channelId = getEventReply(guildId, kind)?.channelId ?? null;
       const notes: string[] = [];
       if (!channelId) {
         notes.push(
@@ -173,9 +173,8 @@ export const events: SlashCommand = {
 
     if (sub === 'channel' && kind) {
       const channel = interaction.options.getChannel('channel', true);
-      setGuildSetting(guildId, eventChannelKey(kind), channel.id);
-
-      const missing = getEventResponder(guildId, kind) === null;
+      const missing = getEventReply(guildId, kind)?.response == null;
+      setEventChannel(guildId, kind, channel.id);
       const embed = serverEmbed(interaction.guild).setDescription(
         [
           `## ${inlineCode(kind)} goes to ${channel.toString()} !`,
@@ -192,9 +191,9 @@ export const events: SlashCommand = {
     }
 
     if (sub === 'show' && kind) {
-      const responder = getEventResponder(guildId, kind);
+      const reply = getEventReply(guildId, kind);
 
-      if (!responder) {
+      if (!reply?.response) {
         const embed = serverEmbed(interaction.guild).setDescription(
           `## no ${inlineCode(kind)} reply yet !\nwrite one with ${commandMention('/events set')} and i'll say something when it happens :3`,
         );
@@ -202,14 +201,13 @@ export const events: SlashCommand = {
         return;
       }
 
-      const channelId = getGuildSetting(guildId, eventChannelKey(kind));
       await interaction.reply({
         embeds: [
           eventDetailEmbed(
             interaction.guild,
             `the ${inlineCode(kind)} reply`,
-            responder.response,
-            channelId,
+            reply.response,
+            reply.channelId,
             [`fire it for real with ${commandMention('/events test')}`],
           ),
         ],
@@ -218,9 +216,9 @@ export const events: SlashCommand = {
     }
 
     if (sub === 'remove' && kind) {
-      const found = getEventResponder(guildId, kind);
+      const found = getEventReply(guildId, kind);
 
-      if (!found) {
+      if (!found?.response) {
         const embed = serverEmbed(interaction.guild).setDescription(
           `## there's no ${inlineCode(kind)} reply to remove !\nmake one with ${commandMention('/events set')}`,
         );
@@ -228,7 +226,7 @@ export const events: SlashCommand = {
         return;
       }
 
-      removeEventResponder(guildId, kind);
+      removeEventReply(guildId, kind);
 
       const embed = serverEmbed(interaction.guild).setDescription(
         `## removed the ${inlineCode(kind)} reply !\n${codeBlock(found.response)}\n-# put it back with ${commandMention('/events set')}`,
@@ -245,14 +243,10 @@ export const events: SlashCommand = {
         )
         .addFields(
           EVENTS.map((event) => {
-            const responder = getEventResponder(guildId, event.id);
-            const channelId = getGuildSetting(
-              guildId,
-              eventChannelKey(event.id),
-            );
+            const reply = getEventReply(guildId, event.id);
             return {
               name: event.label,
-              value: `${responder ? '✓ reply set' : '✗ no reply'}\n${channelId ? `→ ${channelMention(channelId)}` : '→ nowhere !'}`,
+              value: `${reply?.response ? '✓ reply set' : '✗ no reply'}\n${reply?.channelId ? `→ ${channelMention(reply.channelId)}` : '→ nowhere !'}`,
               inline: true,
             };
           }),

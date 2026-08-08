@@ -3,8 +3,7 @@ import { channelMention } from 'discord.js';
 import { getCurrency } from './economy.js';
 import { getPatSettings, isGameEnabled } from './games.js';
 import { isLevelingEnabled } from './levels.js';
-import { getGuildSetting, eventChannelKey } from './settings.js';
-import { getEventResponder } from './autoresponder/store.js';
+import { getEventReply } from './events/store.js';
 import { EVENTS } from './events/registry.js';
 import { formatDuration } from './autoresponder/args.js';
 
@@ -81,11 +80,12 @@ export const SETTINGS: SettingEntry[] = [
     command: '/events set',
     knobs: ['reply', 'channel'],
     render(guildId: string): string[] {
-      const responder = getEventResponder(guildId, event.id);
-      const channelId = getGuildSetting(guildId, eventChannelKey(event.id));
+      const reply = getEventReply(guildId, event.id);
       return [
-        responder ? 'reply set' : 'no reply yet',
-        channelId ? `→ ${channelMention(channelId)}` : '→ nowhere !',
+        reply?.response ? 'reply set' : 'no reply yet',
+        reply?.channelId
+          ? `→ ${channelMention(reply.channelId)}`
+          : '→ nowhere !',
       ];
     },
   })),

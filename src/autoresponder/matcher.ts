@@ -5,8 +5,6 @@ export function matchesTrigger(
   trigger: string,
   mode: MatchMode,
 ): boolean {
-  if (mode === 'event') return false;
-
   const trig = trigger.toLowerCase().trim();
   if (trig.length === 0) return false;
 
@@ -39,7 +37,7 @@ export function extractArgs(
   mode: MatchMode,
 ): string[] {
   const trig = trigger.toLowerCase().trim();
-  if (mode === 'exact' || mode === 'event' || trig.length === 0) return [];
+  if (mode === 'exact' || trig.length === 0) return [];
 
   let remainder: string;
   if (mode === 'startswith') {

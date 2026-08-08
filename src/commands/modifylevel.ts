@@ -13,8 +13,9 @@ import {
   levelFromXp,
   totalXpForLevel,
   MAX_LEVEL,
+  countLevelRepliesBetween,
 } from '../levels.js';
-import { fireLevelUps, countLevelResponders } from '../levelups.js';
+import { fireLevelUps } from '../levelups.js';
 import { serverEmbed, NO_DMS } from '../style.js';
 
 function userOption(o: SlashCommandUserOption): SlashCommandUserOption {
@@ -146,7 +147,7 @@ export const modifylevel: SlashCommand = {
     }
 
     const afterLevel = levelFromXp(result.xp);
-    const crossed = countLevelResponders(guildId, beforeLevel, afterLevel);
+    const crossed = countLevelRepliesBetween(guildId, beforeLevel, afterLevel);
     const summary = [
       `${member} is now level **${afterLevel}** with **${result.xp.toLocaleString('en-US')}** xp !`,
       crossed > 0

@@ -15,6 +15,7 @@ import {
   XP_COOLDOWN_SECONDS,
 } from '../levels.js';
 import { getGameCooldownRemaining, setGameCooldown } from '../games.js';
+import { autoresponderScope } from '../cooldowns.js';
 import { fireLevelUps } from '../levelups.js';
 import { handleOwnerCommand } from '../ownerCommand.js';
 import { failureEmbed } from '../style.js';
@@ -80,7 +81,7 @@ export function registerMessageCreate(client: SakoClient): void {
               responder.matchMode,
             ),
           },
-          responder.triggerKey,
+          autoresponderScope(responder.triggerKey),
         );
 
         if (!result.ok) {

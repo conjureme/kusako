@@ -44,5 +44,5 @@ export interface RenderContext {
 export interface EvalMeta {
   guildId: string;
   userId: string;
-  triggerKey: string;
+  scope: string;
 }

@@ -1,9 +1,5 @@
 import { db } from './db.js';
 
-export function eventChannelKey(kind: string): string {
-  return `event.${kind}.channel`;
-}
-
 export function getGuildSetting(guildId: string, key: string): string | null {
   const row = db()
     .prepare('SELECT value FROM guild_settings WHERE guild_id = ? AND key = ?')

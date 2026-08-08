@@ -1,9 +1,9 @@
 import { type Guild, type GuildMember } from 'discord.js';
 
 import type { SakoClient } from '../client.js';
-import { getEventResponder } from '../autoresponder/store.js';
+import { getEventReply } from './store.js';
 import { EVENTS, type EventKind } from './registry.js';
-import { getGuildSetting, eventChannelKey } from '../settings.js';
+import { eventScope } from '../cooldowns.js';
 import { parse } from '../autoresponder/parser.js';
 import { evaluate } from '../autoresponder/evaluate.js';
 import { deliver } from '../autoresponder/deliver.js';
@@ -15,24 +15,23 @@ export type FireOutcome =
   | { kind: 'no-channel' }
   | { kind: 'blocked'; reason: string };
 
-export { eventChannelKey };
-
 export async function fireEvent(
   guild: Guild,
   member: GuildMember,
   kind: EventKind,
 ): Promise<FireOutcome> {
-  const responder = getEventResponder(guild.id, kind);
-  if (!responder) return { kind: 'no-template' };
+  const reply = getEventReply(guild.id, kind);
+  if (!reply?.response) return { kind: 'no-template' };
 
-  const channelId = getGuildSetting(guild.id, eventChannelKey(kind));
-  const channel = channelId ? guild.channels.cache.get(channelId) : null;
+  const channel = reply.channelId
+    ? guild.channels.cache.get(reply.channelId)
+    : null;
   if (!channel || !channel.isTextBased()) return { kind: 'no-channel' };
 
   const result = await evaluate(
-    parse(responder.response),
+    parse(reply.response),
     { member, guild, channel },
-    responder.triggerKey,
+    eventScope(kind),
   );
   if (!result.ok) return { kind: 'blocked', reason: result.message };
 

@@ -1,19 +1,12 @@
-import { db } from './db.js';
 import { getGuildSetting, setGuildSetting } from './settings.js';
+import { getCooldownRemaining, setCooldown, gameScope } from './cooldowns.js';
 
 export function getGameCooldownRemaining(
   guildId: string,
   game: string,
   userId: string,
 ): number {
-  const row = db()
-    .prepare(
-      'SELECT expires_at FROM game_cooldowns WHERE guild_id = ? AND game = ? AND user_id = ?',
-    )
-    .get(guildId, game, userId) as { expires_at: number } | undefined;
-
-  if (!row) return 0;
-  return Math.max(0, Math.ceil((row.expires_at - Date.now()) / 1000));
+  return getCooldownRemaining(guildId, gameScope(game), userId);
 }
 
 export function setGameCooldown(
@@ -22,14 +15,7 @@ export function setGameCooldown(
   userId: string,
   seconds: number,
 ): void {
-  db()
-    .prepare(
-      `INSERT INTO game_cooldowns (guild_id, game, user_id, expires_at)
-       VALUES (?, ?, ?, ?)
-       ON CONFLICT (guild_id, game, user_id)
-       DO UPDATE SET expires_at = excluded.expires_at`,
-    )
-    .run(guildId, game, userId, Date.now() + seconds * 1000);
+  setCooldown(guildId, gameScope(game), userId, seconds);
 }
 
 export function isGameEnabled(guildId: string, game: string): boolean {
