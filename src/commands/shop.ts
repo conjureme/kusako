@@ -241,9 +241,9 @@ export const shop: SlashCommand = {
           ? ''
           : `\n-# ${result.remainingStock} left in stock`;
       const embed = userEmbed(interaction.user)
-        .setTitle('✧･ﾟ purchase !')
+        .setTitle('✧･ﾟ purchased !')
         .setDescription(
-          `you bought ${item.emoji ?? '📦'} **${item.name}** for ${currency.emoji} **${result.price.toLocaleString('en-US')} ${currency.name}** !${usable}${stockLine}`,
+          `you bought ${item.emoji ?? '📦'} **${item.name}** for ${currency.emoji} **${result.price.toLocaleString('en-US')}** !${usable}${stockLine}`,
         );
 
       await interaction.reply({ embeds: [embed] });
