@@ -57,6 +57,41 @@ export function setBalance(
   return run();
 }
 
+export function transferBalance(
+  guildId: string,
+  fromUserId: string,
+  toUserId: string,
+  amount: number,
+  reason: string,
+): ModifyResult {
+  const value = Math.trunc(amount);
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    return { ok: false, balance: getBalance(guildId, fromUserId) };
+  }
+
+  const run = db().transaction((): ModifyResult => {
+    const taken = modifyBalance(
+      guildId,
+      fromUserId,
+      -value,
+      `${reason} to ${toUserId}`,
+    );
+    if (!taken.ok) return taken;
+
+    const given = modifyBalance(
+      guildId,
+      toUserId,
+      value,
+      `${reason} from ${fromUserId}`,
+    );
+    if (!given.ok) throw new Error('balance transfer failed');
+
+    return taken;
+  });
+
+  return run();
+}
+
 export function modifyBalance(
   guildId: string,
   userId: string,
