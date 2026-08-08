@@ -18,6 +18,7 @@ import { modifylevel } from './modifylevel.js';
 import { send } from './send.js';
 import { buttonresponders } from './buttonresponders.js';
 import { give } from './give.js';
+import { modifyrolebalance } from './modifyrolebalance.js';
 
 export const commands: SlashCommand[] = [
   ping,
@@ -38,4 +39,5 @@ export const commands: SlashCommand[] = [
   send,
   buttonresponders,
   give,
+  modifyrolebalance,
 ];
