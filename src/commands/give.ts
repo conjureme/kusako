@@ -45,7 +45,7 @@ export const give: SlashCommand = {
     const currency = getCurrency(guildId);
 
     const money = (value: number) =>
-      `${currency.emoji} **${value.toLocaleString('en-US')} ${currency.name}**`;
+      `${currency.emoji} **${value.toLocaleString('en-US')}**`;
 
     if (target.bot) {
       await interaction.reply({
@@ -78,9 +78,7 @@ export const give: SlashCommand = {
 
     const embed = userEmbed(interaction.user)
       .setTitle('✧･ﾟ handed over !')
-      .setDescription(
-        `${interaction.user} gave ${money(amount)} to ${target} !\n-# you've got ${money(result.balance)} left`,
-      );
+      .setDescription(`successfully gave ${money(amount)} to ${target} !`);
 
     await interaction.reply({ embeds: [embed] });
   },
