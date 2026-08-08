@@ -20,7 +20,6 @@ import {
   getItem,
   getCirculation,
   listItems,
-  transferItem,
   type Item,
 } from '../items.js';
 import { getListing } from '../shop.js';
@@ -221,6 +220,7 @@ registerPage('items', itemsPage);
 
 export async function respondWithItemNames(
   interaction: AutocompleteInteraction,
+  filter?: (item: Item) => boolean,
 ): Promise<void> {
   if (!interaction.inCachedGuild()) {
     await interaction.respond([]);
@@ -230,6 +230,7 @@ export async function respondWithItemNames(
   const focused = interaction.options.getFocused().toLowerCase();
   const choices = listItems(interaction.guildId)
     .filter((item) => item.nameKey.includes(focused))
+    .filter((item) => filter?.(item) ?? true)
     .slice(0, 25)
     .map((item) => ({ name: item.name, value: item.name }));
 
@@ -239,7 +240,7 @@ export async function respondWithItemNames(
 export const items: SlashCommand = {
   data: new SlashCommandBuilder()
     .setName('items')
-    .setDescription("this server's items ! browse, use, and gift them")
+    .setDescription("this server's items ! browse and use them")
     .addSubcommand((sub) =>
       sub
         .setName('add')
@@ -371,29 +372,6 @@ export const items: SlashCommand = {
             .setMaxLength(NAME_MAX)
             .setRequired(true)
             .setAutocomplete(true),
-        ),
-    )
-    .addSubcommand((sub) =>
-      sub
-        .setName('gift')
-        .setDescription('gift an item to someone !')
-        .addStringOption((o) =>
-          o
-            .setName('name')
-            .setDescription('the item to gift')
-            .setMaxLength(NAME_MAX)
-            .setRequired(true)
-            .setAutocomplete(true),
-        )
-        .addUserOption((o) =>
-          o.setName('user').setDescription('who gets it').setRequired(true),
-        )
-        .addIntegerOption((o) =>
-          o
-            .setName('amount')
-            .setDescription('how many')
-            .setMinValue(1)
-            .setRequired(false),
         ),
     ) as SlashCommandBuilder,
 
@@ -681,65 +659,6 @@ export const items: SlashCommand = {
         channel,
         interaction,
       });
-      return;
-    }
-
-    if (sub === 'gift') {
-      const name = interaction.options.getString('name', true);
-      const target = interaction.options.getUser('user', true);
-      const amount = interaction.options.getInteger('amount') ?? 1;
-
-      if (target.bot) {
-        await interaction.reply({
-          content: "bots can't hold items ! they have no pockets :c",
-        });
-        return;
-      }
-
-      if (target.id === interaction.user.id) {
-        await interaction.reply({
-          content: "that's already yours, silly !!",
-        });
-        return;
-      }
-
-      const item = getItem(guildId, name);
-      if (!item) {
-        await interaction.reply({
-          content: `there's no item called ${inlineCode(name)} !`,
-        });
-        return;
-      }
-
-      if (!item.giftable) {
-        await interaction.reply({
-          content: `${item.emoji ?? '📦'} **${item.name}** can't be gifted !`,
-        });
-        return;
-      }
-
-      const result = transferItem(
-        guildId,
-        interaction.user.id,
-        target.id,
-        name,
-        amount,
-      );
-
-      if (!result.ok) {
-        await interaction.reply({
-          content: `you don't have ${amount}× ${item.emoji ?? '📦'} **${item.name}** to give ! you only have ${result.quantity} !`,
-        });
-        return;
-      }
-
-      const embed = userEmbed(interaction.user)
-        .setTitle('✧･ﾟ gift sent !')
-        .setDescription(
-          `${interaction.user} gave ${amount}× ${item.emoji ?? '📦'} **${item.name}** to ${target} !`,
-        );
-
-      await interaction.reply({ embeds: [embed] });
       return;
     }
   },
