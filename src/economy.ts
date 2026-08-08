@@ -57,6 +57,26 @@ export function setBalance(
   return run();
 }
 
+export function modifyBalances(
+  guildId: string,
+  userIds: string[],
+  delta: number,
+  reason: string,
+): boolean {
+  const amount = Math.trunc(delta);
+  if (!Number.isSafeInteger(amount) || userIds.length === 0) return false;
+
+  const run = db().transaction((): boolean => {
+    for (const userId of userIds) {
+      const result = modifyBalance(guildId, userId, amount, reason);
+      if (!result.ok) throw new Error('bulk balance change failed');
+    }
+    return true;
+  });
+
+  return run();
+}
+
 export function transferBalance(
   guildId: string,
   fromUserId: string,
