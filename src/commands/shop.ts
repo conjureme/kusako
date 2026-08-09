@@ -7,18 +7,18 @@ import {
 } from 'discord.js';
 
 import type { SlashCommand } from '../client.js';
-import { getItem, listItems } from '../items.js';
+import { getItem, listItems } from '../services/items/store.js';
 import {
   getListing,
   listShop,
   setListing,
   removeListing,
   purchase,
-} from '../shop.js';
-import { getCurrency } from '../economy.js';
-import { paginate, applyPage } from '../pagination.js';
-import { registerPage } from '../pageRegistry.js';
-import { serverEmbed, userEmbed, NO_DMS } from '../style.js';
+} from '../services/items/shop.js';
+import { getCurrency } from '../services/economy/guild.js';
+import { paginate, applyPage } from '../utils/pagination.js';
+import { registerPage } from '../services/pageRegistry.js';
+import { serverEmbed, userEmbed, NO_DMS } from '../utils/style.js';
 
 const NAME_MAX = 50;
 

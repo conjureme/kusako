@@ -5,11 +5,11 @@ import {
 } from 'discord.js';
 
 import type { SlashCommand } from '../client.js';
-import { parse } from '../autoresponder/parser.js';
-import { templateIssues } from '../autoresponder/validate.js';
-import { evaluate } from '../autoresponder/evaluate.js';
-import { deliver } from '../autoresponder/deliver.js';
-import { userEmbed, failureEmbed, NO_DMS } from '../style.js';
+import { parse } from '../dsl/parser.js';
+import { templateIssues } from '../dsl/validate.js';
+import { evaluate } from '../dsl/evaluate.js';
+import { deliver } from '../dsl/deliver.js';
+import { userEmbed, failureEmbed, NO_DMS } from '../utils/style.js';
 
 const MESSAGE_MAX = 2000;
 

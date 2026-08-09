@@ -15,14 +15,14 @@ import {
   getEventReply,
   setEventChannel,
   removeEventReply,
-} from '../events/store.js';
-import { EVENTS, type EventKind } from '../events/registry.js';
-import { templateIssues } from '../autoresponder/validate.js';
-import { parse } from '../autoresponder/parser.js';
-import { fireEvent } from '../events/guildEvents.js';
-import { serverEmbed, NO_DMS } from '../style.js';
-import { templateDetailEmbed } from './autoresponders.js';
-import { commandMention } from '../commandMentions.js';
+} from '../services/guildEvents/store.js';
+import { EVENTS, type EventKind } from '../services/guildEvents/registry.js';
+import { templateIssues } from '../dsl/validate.js';
+import { parse } from '../dsl/parser.js';
+import { fireEvent } from '../services/guildEvents/fire.js';
+import { serverEmbed, NO_DMS } from '../utils/style.js';
+import { templateDetailEmbed } from '../utils/templateEmbed.js';
+import { commandMention } from '../utils/commandMentions.js';
 
 const RESPONSE_MAX = 2000;
 

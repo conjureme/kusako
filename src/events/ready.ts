@@ -2,8 +2,8 @@ import { Events } from 'discord.js';
 
 import type { SakoClient } from '../client.js';
 import { logger } from '../logger.js';
-import { startScheduler } from '../scheduler.js';
-import { cacheCommandIds } from '../commandMentions.js';
+import { startScheduler } from '../services/scheduler.js';
+import { cacheCommandIds } from '../utils/commandMentions.js';
 
 export function registerReady(client: SakoClient): void {
   client.once(Events.ClientReady, async (c) => {

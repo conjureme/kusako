@@ -1,13 +1,13 @@
 import { SlashCommandBuilder, inlineCode } from 'discord.js';
 
 import type { SlashCommand } from '../client.js';
-import { getBalance, getCurrency } from '../economy.js';
+import { getBalance, getCurrency } from '../services/economy/guild.js';
 import {
   GLOBAL_CURRENCIES,
   GLOBAL_CURRENCY_IDS,
   getGlobalBalances,
-} from '../globalEconomy.js';
-import { userEmbed, spacerFile, SPACER_IMAGE, NO_DMS } from '../style.js';
+} from '../services/economy/global.js';
+import { userEmbed, spacerFile, SPACER_IMAGE, NO_DMS } from '../utils/style.js';
 
 const NO_BUFF = '-# ₊˚⊹ nothing boosting...';
 

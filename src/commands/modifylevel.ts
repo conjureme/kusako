@@ -14,9 +14,9 @@ import {
   totalXpForLevel,
   MAX_LEVEL,
   countLevelRepliesBetween,
-} from '../levels.js';
-import { fireLevelUps } from '../levelups.js';
-import { serverEmbed, NO_DMS } from '../style.js';
+} from '../services/levels/store.js';
+import { fireLevelUps } from '../services/levels/fire.js';
+import { serverEmbed, NO_DMS } from '../utils/style.js';
 
 function userOption(o: SlashCommandUserOption): SlashCommandUserOption {
   return o.setName('user').setDescription('whose levels').setRequired(true);

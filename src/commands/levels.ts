@@ -7,7 +7,7 @@ import {
 } from 'discord.js';
 
 import type { SlashCommand } from '../client.js';
-import { templateIssues } from '../autoresponder/validate.js';
+import { templateIssues } from '../dsl/validate.js';
 import {
   isLevelingEnabled,
   MAX_LEVEL,
@@ -15,12 +15,12 @@ import {
   setLevelReply,
   removeLevelReply,
   listLevelReplies,
-} from '../levels.js';
-import { serverEmbed, NO_DMS } from '../style.js';
-import { templateTraits, templateDetailEmbed } from './autoresponders.js';
-import { commandMention } from '../commandMentions.js';
-import { paginate, applyPage } from '../pagination.js';
-import { registerPage } from '../pageRegistry.js';
+} from '../services/levels/store.js';
+import { serverEmbed, NO_DMS } from '../utils/style.js';
+import { templateTraits, templateDetailEmbed } from '../utils/templateEmbed.js';
+import { commandMention } from '../utils/commandMentions.js';
+import { paginate, applyPage } from '../utils/pagination.js';
+import { registerPage } from '../services/pageRegistry.js';
 
 const RESPONSE_MAX = 2000;
 

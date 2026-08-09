@@ -1,10 +1,10 @@
 import { SlashCommandBuilder, inlineCode } from 'discord.js';
 
 import type { SlashCommand } from '../client.js';
-import { getCurrency, transferBalance } from '../economy.js';
-import { getItem, transferItem } from '../items.js';
+import { getCurrency, transferBalance } from '../services/economy/guild.js';
+import { getItem, transferItem } from '../services/items/store.js';
 import { respondWithItemNames } from './items.js';
-import { userEmbed, NO_DMS } from '../style.js';
+import { userEmbed, NO_DMS } from '../utils/style.js';
 
 const MIN_GIVE = 10;
 const MAX_GIVE = 1_000_000;

@@ -32,14 +32,14 @@ import {
   URLISH,
   type EmbedData,
   type EmbedRecord,
-} from '../embeds.js';
-import { colors, serverEmbed, NO_DMS } from '../style.js';
-import { listAllTemplates } from '../templates.js';
-import { listItems } from '../items.js';
-import { parse } from '../autoresponder/parser.js';
-import type { PlaceholderNode } from '../autoresponder/ast.js';
-import { paginate, applyPage } from '../pagination.js';
-import { registerPage } from '../pageRegistry.js';
+} from '../services/embeds/store.js';
+import { colors, serverEmbed, NO_DMS } from '../utils/style.js';
+import { listAllTemplates } from '../services/templates.js';
+import { listItems } from '../services/items/store.js';
+import { parse } from '../dsl/parser.js';
+import type { PlaceholderNode } from '../dsl/ast.js';
+import { paginate, applyPage } from '../utils/pagination.js';
+import { registerPage } from '../services/pageRegistry.js';
 
 const NAME_MAX = 50;
 const JSON_MAX = 6000;

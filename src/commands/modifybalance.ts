@@ -1,8 +1,12 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 
 import type { SlashCommand } from '../client.js';
-import { getCurrency, modifyBalance, setBalance } from '../economy.js';
-import { serverEmbed, NO_DMS } from '../style.js';
+import {
+  getCurrency,
+  modifyBalance,
+  setBalance,
+} from '../services/economy/guild.js';
+import { serverEmbed, NO_DMS } from '../utils/style.js';
 
 export const modifybalance: SlashCommand = {
   data: new SlashCommandBuilder()

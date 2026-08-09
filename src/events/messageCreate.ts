@@ -1,11 +1,14 @@
 import { Events } from 'discord.js';
 
 import type { SakoClient } from '../client.js';
-import { listAutoresponders } from '../autoresponder/store.js';
-import { matchesTrigger, extractArgs } from '../autoresponder/matcher.js';
-import { parse } from '../autoresponder/parser.js';
-import { evaluate } from '../autoresponder/evaluate.js';
-import { deliver } from '../autoresponder/deliver.js';
+import { listAutoresponders } from '../services/autoresponders/store.js';
+import {
+  matchesTrigger,
+  extractArgs,
+} from '../services/autoresponders/matcher.js';
+import { parse } from '../dsl/parser.js';
+import { evaluate } from '../dsl/evaluate.js';
+import { deliver } from '../dsl/deliver.js';
 import {
   isLevelingEnabled,
   levelFromXp,
@@ -13,12 +16,15 @@ import {
   XP_MIN,
   XP_MAX,
   XP_COOLDOWN_SECONDS,
-} from '../levels.js';
-import { getGameCooldownRemaining, setGameCooldown } from '../games.js';
-import { autoresponderScope } from '../cooldowns.js';
-import { fireLevelUps } from '../levelups.js';
-import { handleOwnerCommand } from '../ownerCommand.js';
-import { failureEmbed } from '../style.js';
+} from '../services/levels/store.js';
+import {
+  getGameCooldownRemaining,
+  setGameCooldown,
+} from '../services/games/store.js';
+import { autoresponderScope } from '../services/cooldowns.js';
+import { fireLevelUps } from '../services/levels/fire.js';
+import { handleOwnerCommand } from '../commands/owner.js';
+import { failureEmbed } from '../utils/style.js';
 import { logger } from '../logger.js';
 
 export function registerMessageCreate(client: SakoClient): void {

@@ -1,15 +1,15 @@
 import { SlashCommandBuilder } from 'discord.js';
 
 import type { SlashCommand } from '../client.js';
-import { getCurrency, modifyBalance } from '../economy.js';
+import { getCurrency, modifyBalance } from '../services/economy/guild.js';
 import {
   getPatSettings,
   getGameCooldownRemaining,
   setGameCooldown,
   isGameEnabled,
-} from '../games.js';
-import { formatDuration } from '../autoresponder/args.js';
-import { userEmbed, NO_DMS } from '../style.js';
+} from '../services/games/store.js';
+import { formatDuration } from '../dsl/args.js';
+import { userEmbed, NO_DMS } from '../utils/style.js';
 
 const LINES = [
   'thank u for the pats!! here, take {{pay}} 𐔌˙.',

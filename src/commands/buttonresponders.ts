@@ -21,81 +21,17 @@ import {
   removeButtonResponder,
   listButtonResponders,
   parseButtonCustomId,
-  buttonKey,
-} from '../buttonResponders.js';
-import { buttonScope } from '../cooldowns.js';
-import { templateTraits, templateDetailEmbed } from './autoresponders.js';
-import { commandMention } from '../commandMentions.js';
-import { templateIssues } from '../autoresponder/validate.js';
-import { parse } from '../autoresponder/parser.js';
-import { evaluate } from '../autoresponder/evaluate.js';
-import { deliver } from '../autoresponder/deliver.js';
-import { serverEmbed, failureEmbed, NO_DMS } from '../style.js';
-import { paginate, applyPage } from '../pagination.js';
-import { registerPage } from '../pageRegistry.js';
-import { logger } from '../logger.js';
+} from '../services/buttons/store.js';
+import { templateTraits, templateDetailEmbed } from '../utils/templateEmbed.js';
+import { fireButtonResponder } from '../services/buttons/fire.js';
+import { commandMention } from '../utils/commandMentions.js';
+import { templateIssues } from '../dsl/validate.js';
+import { serverEmbed, NO_DMS } from '../utils/style.js';
+import { paginate, applyPage } from '../utils/pagination.js';
+import { registerPage } from '../services/pageRegistry.js';
 
 const NAME_MAX = 50;
 const REPLY_MAX = 2000;
-
-export async function fireButtonResponder(
-  interaction: ButtonInteraction,
-): Promise<void> {
-  const name = parseButtonCustomId(interaction.customId);
-  if (name === null || !interaction.inCachedGuild()) return;
-
-  const responder = getButtonResponder(interaction.guildId, name);
-  if (
-    !responder ||
-    !interaction.channel ||
-    !interaction.channel.isTextBased()
-  ) {
-    await interaction.deferUpdate();
-    return;
-  }
-
-  const nodes = parse(responder.response);
-  const wantsEphemeral = nodes.some(
-    (node) => node.kind === 'placeholder' && node.name === 'ephemeral',
-  );
-
-  // an ephemeral reply needs the token left open for it, and {ephemeral} is
-  // only knowable once the template is parsed, so the defer has to wait
-  if (!wantsEphemeral) await interaction.deferUpdate();
-
-  const result = await evaluate(
-    nodes,
-    {
-      member: interaction.member,
-      guild: interaction.guild,
-      channel: interaction.channel,
-    },
-    buttonScope(responder.nameKey),
-  );
-  if (!result.ok) {
-    if (result.silent) {
-      if (wantsEphemeral) await interaction.deferUpdate();
-      return;
-    }
-    if (wantsEphemeral) {
-      await interaction.reply({
-        embeds: [failureEmbed(result.message)],
-        flags: MessageFlags.Ephemeral,
-      });
-      return;
-    }
-    await interaction.channel.send({
-      embeds: [failureEmbed(result.message)],
-    });
-    return;
-  }
-
-  await deliver(result.segments, result.actions, {
-    member: interaction.member,
-    channel: interaction.channel,
-    interaction,
-  });
-}
 
 function confirmRow(nameKey: string): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(

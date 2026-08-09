@@ -21,16 +21,21 @@ import {
   getCirculation,
   listItems,
   type Item,
-} from '../items.js';
-import { getListing } from '../shop.js';
-import { serverEmbed, userEmbed, failureEmbed, NO_DMS } from '../style.js';
-import { parse } from '../autoresponder/parser.js';
-import type { Node, PlaceholderNode } from '../autoresponder/ast.js';
-import { templateIssues } from '../autoresponder/validate.js';
-import { evaluate } from '../autoresponder/evaluate.js';
-import { deliver } from '../autoresponder/deliver.js';
-import { paginate, applyPage } from '../pagination.js';
-import { registerPage } from '../pageRegistry.js';
+} from '../services/items/store.js';
+import { getListing } from '../services/items/shop.js';
+import {
+  serverEmbed,
+  userEmbed,
+  failureEmbed,
+  NO_DMS,
+} from '../utils/style.js';
+import { parse } from '../dsl/parser.js';
+import type { Node, PlaceholderNode } from '../dsl/ast.js';
+import { templateIssues } from '../dsl/validate.js';
+import { evaluate } from '../dsl/evaluate.js';
+import { deliver } from '../dsl/deliver.js';
+import { paginate, applyPage } from '../utils/pagination.js';
+import { registerPage } from '../services/pageRegistry.js';
 
 const NAME_MAX = 50;
 const DESCRIPTION_MAX = 200;

@@ -4,7 +4,7 @@ import { commands } from './commands/index.js';
 import { registerReady } from './events/ready.js';
 import { registerInteractionCreate } from './events/interactionCreate.js';
 import { registerMessageCreate } from './events/messageCreate.js';
-import { registerGuildEvents } from './events/guildEvents.js';
+import { registerGuildEvents } from './events/guildMembers.js';
 
 import { logger } from './logger.js';
 import { db } from './db.js';

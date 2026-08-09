@@ -7,8 +7,8 @@ import {
   totalXpForLevel,
   isLevelingEnabled,
   MAX_LEVEL,
-} from '../levels.js';
-import { userEmbed, NO_DMS } from '../style.js';
+} from '../services/levels/store.js';
+import { userEmbed, NO_DMS } from '../utils/style.js';
 
 export const level: SlashCommand = {
   data: new SlashCommandBuilder()

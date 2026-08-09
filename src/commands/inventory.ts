@@ -1,10 +1,10 @@
 import { SlashCommandBuilder, inlineCode, type Guild } from 'discord.js';
 
 import type { SlashCommand } from '../client.js';
-import { getInventory } from '../items.js';
-import { paginate, applyPage } from '../pagination.js';
-import { registerPage } from '../pageRegistry.js';
-import { userEmbed, spacerFile, SPACER_IMAGE, NO_DMS } from '../style.js';
+import { getInventory } from '../services/items/store.js';
+import { paginate, applyPage } from '../utils/pagination.js';
+import { registerPage } from '../services/pageRegistry.js';
+import { userEmbed, spacerFile, SPACER_IMAGE, NO_DMS } from '../utils/style.js';
 
 const FOOTER = 'global stash lives in /balance !';
 

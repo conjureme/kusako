@@ -5,8 +5,12 @@ import {
 } from 'discord.js';
 
 import type { SlashCommand } from '../client.js';
-import { getItem, modifyInventory, setInventory } from '../items.js';
-import { serverEmbed, NO_DMS } from '../style.js';
+import {
+  getItem,
+  modifyInventory,
+  setInventory,
+} from '../services/items/store.js';
+import { serverEmbed, NO_DMS } from '../utils/style.js';
 import { respondWithItemNames } from './items.js';
 
 const NAME_MAX = 50;

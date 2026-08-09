@@ -5,7 +5,7 @@ import { handleEmbedComponents } from '../commands/embeds.js';
 import { handleItemComponents } from '../commands/items.js';
 import { handleButtonResponderComponents } from '../commands/buttonresponders.js';
 import { handleSettingsComponents } from '../commands/settings.js';
-import { buildPage } from '../pageRegistry.js';
+import { buildPage } from '../services/pageRegistry.js';
 import { logger } from '../logger.js';
 
 export function registerInteractionCreate(client: SakoClient): void {

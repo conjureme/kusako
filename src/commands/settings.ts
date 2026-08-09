@@ -9,23 +9,28 @@ import {
 } from 'discord.js';
 
 import type { SlashCommand } from '../client.js';
-import { getCurrency, setCurrency } from '../economy.js';
+import { getCurrency, setCurrency } from '../services/economy/guild.js';
 import {
   getPatSettings,
   setPatSettings,
   isGameEnabled,
   setGameEnabled,
-} from '../games.js';
-import { setLevelingEnabled } from '../levels.js';
-import { formatDuration } from '../autoresponder/args.js';
+} from '../services/games/store.js';
+import { setLevelingEnabled } from '../services/levels/store.js';
+import { formatDuration } from '../dsl/args.js';
 import {
   groups,
   findGroup,
   findSetting,
   SETTINGS,
-} from '../settingsRegistry.js';
-import { commandMention } from '../commandMentions.js';
-import { serverEmbed, spacerFile, SPACER_IMAGE, NO_DMS } from '../style.js';
+} from '../services/settings/registry.js';
+import { commandMention } from '../utils/commandMentions.js';
+import {
+  serverEmbed,
+  spacerFile,
+  SPACER_IMAGE,
+  NO_DMS,
+} from '../utils/style.js';
 
 function groupSelect(
   selected: string | null,
