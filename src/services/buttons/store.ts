@@ -1,7 +1,9 @@
 import { db } from '../../db.js';
 import { clearCooldowns, buttonScope } from '../cooldowns.js';
+import type { ButtonLimit } from './registry.js';
 
 const CUSTOM_ID_PREFIX = 'br:';
+const LOCKED_ID_PREFIX = 'bri:';
 
 export interface ButtonResponder {
   guildId: string;
@@ -51,14 +53,38 @@ export function buttonKey(name: string): string {
   return name.toLowerCase();
 }
 
-export function buttonCustomId(name: string): string {
-  return `${CUSTOM_ID_PREFIX}${buttonKey(name)}`;
+export function buttonCustomId(name: string, invokerId?: string): string {
+  return invokerId
+    ? `${LOCKED_ID_PREFIX}${invokerId}:${buttonKey(name)}`
+    : `${CUSTOM_ID_PREFIX}${buttonKey(name)}`;
 }
 
-export function parseButtonCustomId(customId: string): string | null {
+export interface ParsedButtonId {
+  nameKey: string;
+  invokerId: string | null;
+}
+
+export function parseButtonCustomId(customId: string): ParsedButtonId | null {
+  if (customId.startsWith(LOCKED_ID_PREFIX)) {
+    const rest = customId.slice(LOCKED_ID_PREFIX.length);
+    const split = rest.indexOf(':');
+    if (split < 1) return null;
+    return {
+      nameKey: rest.slice(split + 1),
+      invokerId: rest.slice(0, split),
+    };
+  }
+
   return customId.startsWith(CUSTOM_ID_PREFIX)
-    ? customId.slice(CUSTOM_ID_PREFIX.length)
+    ? { nameKey: customId.slice(CUSTOM_ID_PREFIX.length), invokerId: null }
     : null;
+}
+
+export function isButtonCustomId(customId: string): boolean {
+  return (
+    customId.startsWith(CUSTOM_ID_PREFIX) ||
+    customId.startsWith(LOCKED_ID_PREFIX)
+  );
 }
 
 export function getButtonResponder(
@@ -84,19 +110,41 @@ export function listButtonResponders(guildId: string): ButtonResponder[] {
   return rows.map(toModel);
 }
 
+export interface ButtonLook {
+  label?: string | null;
+  emoji?: string | null;
+  style?: string | null;
+  limitMode?: string | null;
+  invokerOnly?: boolean;
+}
+
 export function addButtonResponder(
   guildId: string,
   name: string,
   response: string,
+  look: ButtonLook = {},
 ): boolean {
   const now = Date.now();
   const result = db()
     .prepare(
       `INSERT OR IGNORE INTO button_responders
-        (guild_id, name, name_key, response, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+        (guild_id, name, name_key, response, label, emoji, style,
+         limit_mode, invoker_only, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
-    .run(guildId, name.trim(), buttonKey(name), response, now, now);
+    .run(
+      guildId,
+      name.trim(),
+      buttonKey(name),
+      response,
+      look.label ?? null,
+      look.emoji ?? null,
+      look.style ?? null,
+      look.limitMode ?? null,
+      look.invokerOnly ? 1 : 0,
+      now,
+      now,
+    );
 
   return result.changes > 0;
 }
@@ -104,16 +152,89 @@ export function addButtonResponder(
 export function editButtonResponder(
   guildId: string,
   name: string,
-  response: string,
+  response: string | null,
+  look: ButtonLook = {},
 ): boolean {
+  const existing = getButtonResponder(guildId, name);
+  if (!existing) return false;
+
   const result = db()
     .prepare(
-      `UPDATE button_responders SET response = ?, updated_at = ?
+      `UPDATE button_responders
+       SET response = ?, label = ?, emoji = ?, style = ?,
+           limit_mode = ?, invoker_only = ?, updated_at = ?
        WHERE guild_id = ? AND name_key = ?`,
     )
-    .run(response, Date.now(), guildId, buttonKey(name));
+    .run(
+      response ?? existing.response,
+      look.label === undefined ? existing.label : look.label,
+      look.emoji === undefined ? existing.emoji : look.emoji,
+      look.style === undefined ? existing.style : look.style,
+      look.limitMode === undefined ? existing.limitMode : look.limitMode,
+      (look.invokerOnly ?? existing.invokerOnly) ? 1 : 0,
+      Date.now(),
+      guildId,
+      buttonKey(name),
+    );
 
   return result.changes > 0;
+}
+
+export function claimButtonClick(
+  guildId: string,
+  messageId: string,
+  userId: string,
+  nameKey: string,
+  limit: ButtonLimit,
+): boolean {
+  const conditions = ['message_id = ?'];
+  const params: string[] = [messageId];
+  if (limit.perUser) {
+    conditions.push('user_id = ?');
+    params.push(userId);
+  }
+  if (limit.perButton) {
+    conditions.push('button_key = ?');
+    params.push(nameKey);
+  }
+
+  const run = db().transaction((): boolean => {
+    const taken = db()
+      .prepare(
+        `SELECT 1 FROM button_clicks WHERE ${conditions.join(' AND ')} LIMIT 1`,
+      )
+      .get(...params);
+    if (taken) return false;
+
+    db()
+      .prepare(
+        `INSERT OR IGNORE INTO button_clicks
+          (guild_id, message_id, user_id, button_key, clicked_at)
+         VALUES (?, ?, ?, ?, ?)`,
+      )
+      .run(guildId, messageId, userId, nameKey, Date.now());
+
+    return true;
+  });
+
+  return run();
+}
+
+export function releaseButtonClick(
+  messageId: string,
+  userId: string,
+  nameKey: string,
+): void {
+  db()
+    .prepare(
+      `DELETE FROM button_clicks
+       WHERE message_id = ? AND user_id = ? AND button_key = ?`,
+    )
+    .run(messageId, userId, nameKey);
+}
+
+export function clearMessageClicks(messageId: string): void {
+  db().prepare('DELETE FROM button_clicks WHERE message_id = ?').run(messageId);
 }
 
 export function removeButtonResponder(guildId: string, name: string): boolean {
