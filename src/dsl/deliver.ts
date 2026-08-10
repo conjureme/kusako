@@ -14,12 +14,48 @@ import {
   scheduleDeletion,
   scheduleRoleRemoval,
 } from '../services/scheduler.js';
-import { buttonCustomId } from '../services/buttons/store.js';
+import {
+  buttonCustomId,
+  getButtonResponder,
+} from '../services/buttons/store.js';
+import {
+  isUsableEmoji,
+  resolveButtonStyle,
+} from '../services/buttons/registry.js';
 import { logger } from '../logger.js';
 import type { Segment, MessageActions } from './evaluate.js';
 
+function responderButton(
+  guildId: string,
+  name: string,
+  invokerId: string,
+): ButtonBuilder {
+  const responder = getButtonResponder(guildId, name);
+  const button = new ButtonBuilder()
+    .setStyle(resolveButtonStyle(responder?.style ?? null))
+    .setCustomId(
+      buttonCustomId(name, responder?.invokerOnly ? invokerId : undefined),
+    );
+
+  const emoji = responder?.emoji;
+  const hasEmoji =
+    emoji !== null && emoji !== undefined && isUsableEmoji(emoji);
+  if (hasEmoji) button.setEmoji(emoji);
+
+  const label = responder?.label?.trim();
+  if (label) {
+    button.setLabel(label.slice(0, 80));
+  } else if (!hasEmoji) {
+    button.setLabel(name.slice(0, 80));
+  }
+
+  return button;
+}
+
 function buildButtonRows(
   buttons: MessageActions['buttons'],
+  guildId: string,
+  invokerId: string,
 ): ActionRowBuilder<ButtonBuilder>[] {
   const rows: ActionRowBuilder<ButtonBuilder>[] = [];
   for (let i = 0; i < buttons.length; i += 5) {
@@ -31,10 +67,7 @@ function buildButtonRows(
               .setStyle(ButtonStyle.Link)
               .setLabel(button.label.slice(0, 80))
               .setURL(button.url)
-          : new ButtonBuilder()
-              .setStyle(ButtonStyle.Secondary)
-              .setLabel(button.name.slice(0, 80))
-              .setCustomId(buttonCustomId(button.name)),
+          : responderButton(guildId, button.name, invokerId),
       );
     }
     rows.push(row);
@@ -112,7 +145,13 @@ export async function deliver(
 
   let firstSent: Message | null = null;
   const buttonRows =
-    actions.buttons.length > 0 ? buildButtonRows(actions.buttons) : [];
+    actions.buttons.length > 0
+      ? buildButtonRows(
+          actions.buttons,
+          target.member.guild.id,
+          target.member.id,
+        )
+      : [];
   let buttonsAttached = false;
 
   const ephemeral = actions.ephemeral && !actions.dm && target.interaction;
