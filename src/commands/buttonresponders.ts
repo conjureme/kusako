@@ -11,6 +11,7 @@ import {
   type ButtonInteraction,
   type ChatInputCommandInteraction,
   type Guild,
+  type SlashCommandSubcommandBuilder,
 } from 'discord.js';
 
 import type { SlashCommand } from '../client.js';
@@ -21,7 +22,16 @@ import {
   removeButtonResponder,
   listButtonResponders,
   parseButtonCustomId,
+  type ButtonLook,
+  type ButtonResponder,
 } from '../services/buttons/store.js';
+import {
+  BUTTON_LIMITS,
+  LIMIT_IDS,
+  STYLE_IDS,
+  getButtonLimit,
+  isUsableEmoji,
+} from '../services/buttons/registry.js';
 import { templateTraits, templateDetailEmbed } from '../utils/templateEmbed.js';
 import { fireButtonResponder } from '../services/buttons/fire.js';
 import { commandMention } from '../utils/commandMentions.js';
@@ -96,16 +106,117 @@ export async function handleButtonResponderComponents(
   await interaction.update({ embeds: [embed], components: [] });
 }
 
+const NO_LIMIT = 'none';
+
+const COLOR_CHOICES = STYLE_IDS.map((id) => ({ name: id, value: id }));
+const LIMIT_CHOICES = [
+  { name: 'no limit', value: NO_LIMIT },
+  ...LIMIT_IDS.map((id) => ({ name: BUTTON_LIMITS[id]!.label, value: id })),
+];
+
+function lookOptions(
+  sub: SlashCommandSubcommandBuilder,
+): SlashCommandSubcommandBuilder {
+  return sub
+    .addStringOption((o) =>
+      o
+        .setName('label')
+        .setDescription('the words on the button, blank uses the name')
+        .setMaxLength(80)
+        .setRequired(false),
+    )
+    .addStringOption((o) =>
+      o
+        .setName('emoji')
+        .setDescription('the emoji on the button')
+        .setMaxLength(64)
+        .setRequired(false),
+    )
+    .addStringOption((o) =>
+      o
+        .setName('color')
+        .setDescription('the button color')
+        .addChoices(...COLOR_CHOICES)
+        .setRequired(false),
+    )
+    .addStringOption((o) =>
+      o
+        .setName('limit')
+        .setDescription('how many times it can be clicked')
+        .addChoices(...LIMIT_CHOICES)
+        .setRequired(false),
+    )
+    .addBooleanOption((o) =>
+      o
+        .setName('invokeronly')
+        .setDescription('only whoever triggered the message can click it')
+        .setRequired(false),
+    );
+}
+
+function readLook(interaction: ChatInputCommandInteraction): ButtonLook {
+  const look: ButtonLook = {};
+
+  const label = interaction.options.getString('label');
+  if (label !== null) look.label = label.trim() || null;
+
+  const emoji = interaction.options.getString('emoji');
+  if (emoji !== null) look.emoji = emoji.trim() || null;
+
+  const color = interaction.options.getString('color');
+  if (color !== null) look.style = color;
+
+  const limit = interaction.options.getString('limit');
+  if (limit !== null) look.limitMode = limit === NO_LIMIT ? null : limit;
+
+  const invokerOnly = interaction.options.getBoolean('invokeronly');
+  if (invokerOnly !== null) look.invokerOnly = invokerOnly;
+
+  return look;
+}
+
+function lookFields(name: string, look: ButtonResponder | ButtonLook) {
+  const preview = [
+    look.emoji ?? null,
+    `**${look.label?.trim() || name}**`,
+    look.style ?? 'gray',
+  ].filter((part) => part !== null);
+
+  const limit = getButtonLimit(look.limitMode ?? null);
+  const limits = [
+    limit ? limit.blurb : null,
+    look.invokerOnly ? 'only whoever triggered the message' : null,
+  ].filter((part) => part !== null);
+
+  const fields = [
+    { name: 'looks like', value: preview.join(' · '), inline: true },
+  ];
+  if (limits.length > 0) {
+    fields.push({ name: 'limits', value: limits.join(' · '), inline: true });
+  }
+
+  return fields;
+}
+
 function buttonDetailEmbed(
   guild: Guild,
   header: string,
   name: string,
   response: string,
+  look: ButtonResponder | ButtonLook,
   notes: string[] = [],
 ) {
+  const extra = [...notes];
+  if (getButtonLimit(look.limitMode ?? null)?.perButton === false) {
+    extra.push(
+      'the "any button here" limits only cover buttons that carry the same setting, so put it on every button in the group !',
+    );
+  }
+
   return templateDetailEmbed(guild, header, response, {
+    fields: lookFields(name, look),
     notes: [
-      ...notes,
+      ...extra,
       `attach it to a reply with ${inlineCode(`{addbutton:${name}}`)} !`,
     ],
   });
@@ -172,43 +283,47 @@ export const buttonresponders: SlashCommand = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild.toString())
     .setDMPermission(false)
     .addSubcommand((sub) =>
-      sub
-        .setName('add')
-        .setDescription('make a button responder')
-        .addStringOption((o) =>
-          o
-            .setName('name')
-            .setDescription('the button name (its label + id)')
-            .setMaxLength(NAME_MAX)
-            .setRequired(true),
-        )
-        .addStringOption((o) =>
-          o
-            .setName('reply')
-            .setDescription('what sako replies with on click')
-            .setMaxLength(REPLY_MAX)
-            .setRequired(true),
-        ),
+      lookOptions(
+        sub
+          .setName('add')
+          .setDescription('make a button responder')
+          .addStringOption((o) =>
+            o
+              .setName('name')
+              .setDescription('the button name (its id)')
+              .setMaxLength(NAME_MAX)
+              .setRequired(true),
+          )
+          .addStringOption((o) =>
+            o
+              .setName('reply')
+              .setDescription('what sako replies with on click')
+              .setMaxLength(REPLY_MAX)
+              .setRequired(true),
+          ),
+      ),
     )
     .addSubcommand((sub) =>
-      sub
-        .setName('edit')
-        .setDescription('change a button responder')
-        .addStringOption((o) =>
-          o
-            .setName('name')
-            .setDescription('the button to edit')
-            .setMaxLength(NAME_MAX)
-            .setRequired(true)
-            .setAutocomplete(true),
-        )
-        .addStringOption((o) =>
-          o
-            .setName('reply')
-            .setDescription('the new reply')
-            .setMaxLength(REPLY_MAX)
-            .setRequired(true),
-        ),
+      lookOptions(
+        sub
+          .setName('edit')
+          .setDescription('change a button responder')
+          .addStringOption((o) =>
+            o
+              .setName('name')
+              .setDescription('the button to edit')
+              .setMaxLength(NAME_MAX)
+              .setRequired(true)
+              .setAutocomplete(true),
+          )
+          .addStringOption((o) =>
+            o
+              .setName('reply')
+              .setDescription('the new reply')
+              .setMaxLength(REPLY_MAX)
+              .setRequired(false),
+          ),
+      ),
     )
     .addSubcommand((sub) =>
       sub
@@ -262,6 +377,18 @@ export const buttonresponders: SlashCommand = {
 
     const name = interaction.options.getString('name', true);
 
+    const look = readLook(interaction);
+    if (
+      look.emoji !== undefined &&
+      look.emoji !== null &&
+      !isUsableEmoji(look.emoji)
+    ) {
+      await interaction.reply({
+        content: `${inlineCode(look.emoji)} isn't an emoji i can put on a button! use a real emoji, or one of this server's like ${inlineCode('<:name:id>')}`,
+      });
+      return;
+    }
+
     if (sub === 'add') {
       const reply = interaction.options.getString('reply', true);
       const issues = templateIssues(reply);
@@ -270,7 +397,7 @@ export const buttonresponders: SlashCommand = {
         return;
       }
 
-      if (!addButtonResponder(guildId, name, reply)) {
+      if (!addButtonResponder(guildId, name, reply, look)) {
         await interaction.reply({
           embeds: [
             serverEmbed(interaction.guild).setDescription(
@@ -288,6 +415,7 @@ export const buttonresponders: SlashCommand = {
             `made the ${inlineCode(name)} button !`,
             name,
             reply,
+            look,
           ),
         ],
       });
@@ -295,27 +423,32 @@ export const buttonresponders: SlashCommand = {
     }
 
     if (sub === 'edit') {
-      const reply = interaction.options.getString('reply', true);
-      const issues = templateIssues(reply);
-      if (issues) {
-        await interaction.reply({ content: issues });
-        return;
+      const reply = interaction.options.getString('reply');
+      if (reply !== null) {
+        const issues = templateIssues(reply);
+        if (issues) {
+          await interaction.reply({ content: issues });
+          return;
+        }
       }
 
-      if (!editButtonResponder(guildId, name, reply)) {
+      if (!editButtonResponder(guildId, name, reply, look)) {
         await interaction.reply({
           embeds: [noButtonEmbed(interaction.guild, name)],
         });
         return;
       }
 
+      const updated = getButtonResponder(guildId, name)!;
+
       await interaction.reply({
         embeds: [
           buttonDetailEmbed(
             interaction.guild,
-            `updated the ${inlineCode(name)} button !`,
-            name,
-            reply,
+            `updated the ${inlineCode(updated.name)} button !`,
+            updated.name,
+            updated.response,
+            updated,
           ),
         ],
       });
@@ -338,6 +471,7 @@ export const buttonresponders: SlashCommand = {
             `the ${inlineCode(responder.name)} button`,
             responder.name,
             responder.response,
+            responder,
           ),
         ],
       });
