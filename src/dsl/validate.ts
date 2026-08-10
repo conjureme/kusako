@@ -12,7 +12,7 @@ import { URLISH } from '../services/embeds/store.js';
 const MAX_SEGMENTS = 3;
 const MAX_REACTIONS = 3;
 const MAX_EMBEDS = 3;
-const MAX_ROLE_TAGS = 3;
+const MAX_ROLE_TAGS = 25;
 
 const EPHEMERAL_CONFLICTS: Array<[string, string]> = [
   ['delay', 'a private reply only lasts as long as the click does'],
