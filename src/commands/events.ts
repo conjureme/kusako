@@ -103,7 +103,7 @@ export const events: SlashCommand = {
         .addStringOption(eventOption),
     )
     .addSubcommand((sub) =>
-      sub.setName('view').setDescription('all three events at a glance'),
+      sub.setName('list').setDescription('every event at a glance'),
     )
     .addSubcommand((sub) =>
       sub
@@ -123,7 +123,7 @@ export const events: SlashCommand = {
     const guildId = interaction.guildId;
     const sub = interaction.options.getSubcommand();
     const kind =
-      sub === 'view'
+      sub === 'list'
         ? null
         : (interaction.options.getString('event', true) as EventKind);
 
@@ -235,7 +235,7 @@ export const events: SlashCommand = {
       return;
     }
 
-    if (sub === 'view') {
+    if (sub === 'list') {
       const embed = serverEmbed(interaction.guild)
         .setTitle('✦ event replies')
         .setDescription(
