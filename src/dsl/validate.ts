@@ -3,7 +3,12 @@ import { parse } from './parser.js';
 import { generators, RANGE_FORMAT, WEIGHTED_OPTION } from './generators.js';
 import { parseAmount, DYNAMIC_ARG, YEAR_SECONDS } from './args.js';
 import { parseColor } from '../services/embeds/store.js';
-import { ARG_TYPES, resolvePermArg, FAILURE_CAPTURES } from './guards.js';
+import {
+  ARG_TYPES,
+  resolvePermArg,
+  FAILURE_CAPTURES,
+  GUARD_TARGETS,
+} from './guards.js';
 import { MAX_LEVEL } from '../services/levels/store.js';
 import { placeholders, targetArgIndex } from './placeholders.js';
 import { MAX_BUTTONS } from './evaluate.js';
@@ -199,6 +204,11 @@ export function validateTemplate(nodes: Node[]): string[] {
       bound.add(node.captureName);
     }
 
+    const guardTarget = GUARD_TARGETS.get(node.name);
+    if (guardTarget !== undefined) {
+      checkTargetArg(node.args[guardTarget], node.name, errors);
+    }
+
     if (node.name === 'split' || node.name === 'delay') {
       boundaries += 1;
       if (node.name === 'delay') {
@@ -313,7 +323,11 @@ export function validateTemplate(nodes: Node[]): string[] {
           '{requireitem} needs an item name, like {requireitem:shop pass} or {requireitem:milk|3}',
         );
       }
-      if (node.args.length > 1) {
+      if (/^<@!?\d+>$/.test((node.args[1] ?? '').trim())) {
+        errors.push(
+          '{requireitem} needs the amount before the user, like {requireitem:fish|1|@someone}',
+        );
+      } else if (node.args.length > 1) {
         checkAmount(node.args[1], 'requireitem', false, errors);
       }
       continue;

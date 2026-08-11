@@ -1,4 +1,8 @@
-import { PermissionFlagsBits, type PermissionsString } from 'discord.js';
+import {
+  PermissionFlagsBits,
+  type GuildMember,
+  type PermissionsString,
+} from 'discord.js';
 
 import { getBalance, getCurrency } from '../services/economy/guild.js';
 import { getItem, getQuantity } from '../services/items/store.js';
@@ -35,10 +39,26 @@ export const FAILURE_CAPTURES = new Set<string>([
   'target.user',
   'target.id',
 ]);
+export interface GuardSubject {
+  member: GuildMember;
+  isSelf: boolean;
+}
+
+export const GUARD_TARGETS = new Map<string, number>([
+  ['requirebal', 1],
+  ['requireitem', 2],
+  ['requirelevel', 1],
+  ['requirerole', 1],
+  ['denyrole', 1],
+  ['requireperm', 1],
+  ['denyperm', 1],
+]);
+
 export type Guard = (
   meta: EvalMeta,
   args: string[],
   ctx: RenderContext,
+  subject: GuardSubject,
 ) => GuardResult | Promise<GuardResult>;
 
 const CHANNEL_MENTION = /^<#(\d+)>$/;
@@ -139,7 +159,7 @@ export const ARG_TYPES = new Map<
 export const guards = new Map<string, Guard>([
   [
     'requirebal',
-    (meta, args, ctx) => {
+    (meta, args, ctx, subject) => {
       const amount = parseAmount(args[0] ?? '');
       if (amount === null || amount <= 0) {
         return {
@@ -149,14 +169,18 @@ export const guards = new Map<string, Guard>([
       }
 
       const balance =
-        getBalance(meta.guildId, meta.userId) +
-        (ctx.pending?.balanceDelta(meta.userId) ?? 0);
+        getBalance(meta.guildId, subject.member.id) +
+        (ctx.pending?.balanceDelta(subject.member.id) ?? 0);
       if (balance >= amount) return { ok: true };
 
       const currency = getCurrency(meta.guildId);
+      const needs = subject.isSelf
+        ? 'you need'
+        : `${subject.member.toString()} needs`;
+      const got = subject.isSelf ? "you've only got" : "they've only got";
       return {
         ok: false,
-        message: `you need ${currency.emoji} **${amount.toLocaleString('en-US')} ${currency.name}** for that,, you've only got ${balance.toLocaleString('en-US')} !`,
+        message: `${needs} ${currency.emoji} **${amount.toLocaleString('en-US')} ${currency.name}** for that,, ${got} ${balance.toLocaleString('en-US')} !`,
         data: {
           'requirebal.needed': amount.toLocaleString('en-US'),
           'requirebal.have': balance.toLocaleString('en-US'),
@@ -167,7 +191,7 @@ export const guards = new Map<string, Guard>([
   ],
   [
     'requireitem',
-    (meta, args, ctx) => {
+    (meta, args, ctx, subject) => {
       const name = args[0] ?? '';
       const quantity = args.length > 1 ? parseAmount(args[1] ?? '') : 1;
       if (name.length === 0 || quantity === null || quantity <= 0) {
@@ -186,13 +210,16 @@ export const guards = new Map<string, Guard>([
       }
 
       const have =
-        getQuantity(meta.guildId, meta.userId, name) +
-        (ctx.pending?.itemDelta(meta.userId, item.nameKey) ?? 0);
+        getQuantity(meta.guildId, subject.member.id, name) +
+        (ctx.pending?.itemDelta(subject.member.id, item.nameKey) ?? 0);
       if (have >= quantity) return { ok: true };
 
+      const needs = subject.isSelf
+        ? 'you need'
+        : `${subject.member.toString()} needs`;
       return {
         ok: false,
-        message: `you need ${quantity}× ${item.emoji ?? '📦'} **${item.name}** for that !`,
+        message: `${needs} ${quantity}× ${item.emoji ?? '📦'} **${item.name}** for that !`,
         data: {
           'requireitem.item': item.name,
           'requireitem.needed': quantity.toLocaleString('en-US'),
@@ -204,7 +231,7 @@ export const guards = new Map<string, Guard>([
   ],
   [
     'requirelevel',
-    (meta, args) => {
+    (meta, args, _ctx, subject) => {
       const level = parseAmount(args[0] ?? '');
       if (level === null || level <= 0) {
         return {
@@ -213,12 +240,16 @@ export const guards = new Map<string, Guard>([
         };
       }
 
-      const current = levelFromXp(getXp(meta.guildId, meta.userId));
+      const current = levelFromXp(getXp(meta.guildId, subject.member.id));
       if (current >= level) return { ok: true };
 
+      const needs = subject.isSelf
+        ? 'you need'
+        : `${subject.member.toString()} needs`;
+      const only = subject.isSelf ? "you're only" : "they're only";
       return {
         ok: false,
-        message: `you need to be **level ${level}** for that,, you're only level ${current} !`,
+        message: `${needs} to be **level ${level}** for that,, ${only} level ${current} !`,
         data: {
           'requirelevel.needed': String(level),
           'requirelevel.have': String(current),
@@ -269,7 +300,7 @@ export const guards = new Map<string, Guard>([
   ],
   [
     'requirerole',
-    (_meta, args, ctx) => {
+    (_meta, args, ctx, subject) => {
       const raw = (args[0] ?? '').trim();
       if (raw.length === 0) {
         return {
@@ -286,22 +317,26 @@ export const guards = new Map<string, Guard>([
         };
       }
 
-      if (ctx.member.roles.cache.has(role.id)) return { ok: true };
+      if (subject.member.roles.cache.has(role.id)) return { ok: true };
 
       return {
         ok: false,
-        message: `you need the **${role.name}** role for that !`,
+        message: subject.isSelf
+          ? `you need the **${role.name}** role for that !`
+          : `${subject.member.toString()} needs the **${role.name}** role for that !`,
       };
     },
   ],
   [
     'denyrole',
-    (_meta, args, ctx) => {
+    (_meta, args, ctx, subject) => {
       const role = resolveRoleArg(ctx, args[0] ?? '');
-      if (role && ctx.member.roles.cache.has(role.id)) {
+      if (role && subject.member.roles.cache.has(role.id)) {
         return {
           ok: false,
-          message: `sorry, the **${role.name}** role can't touch this one~`,
+          message: subject.isSelf
+            ? `sorry, the **${role.name}** role can't touch this one~`
+            : `${subject.member.toString()} has the **${role.name}** role, so that's a no~`,
         };
       }
       return { ok: true };
@@ -376,7 +411,7 @@ export const guards = new Map<string, Guard>([
   ],
   [
     'requireperm',
-    (_meta, args, ctx) => {
+    (_meta, args, _ctx, subject) => {
       const perm = resolvePermArg(args[0] ?? '');
       if (!perm) {
         return {
@@ -385,17 +420,27 @@ export const guards = new Map<string, Guard>([
         };
       }
 
-      if (ctx.member.permissions.has(perm)) return { ok: true };
+      if (subject.member.permissions.has(perm)) return { ok: true };
 
-      return { ok: false, message: "you're not allowed to do that !" };
+      return {
+        ok: false,
+        message: subject.isSelf
+          ? "you're not allowed to do that !"
+          : `${subject.member.toString()} isn't allowed to do that !`,
+      };
     },
   ],
   [
     'denyperm',
-    (_meta, args, ctx) => {
+    (_meta, args, _ctx, subject) => {
       const perm = resolvePermArg(args[0] ?? '');
-      if (perm && ctx.member.permissions.has(perm)) {
-        return { ok: false, message: "nuh uh, this one's not for you" };
+      if (perm && subject.member.permissions.has(perm)) {
+        return {
+          ok: false,
+          message: subject.isSelf
+            ? "nuh uh, this one's not for you"
+            : `nuh uh, this one's not for ${subject.member.toString()}`,
+        };
       }
       return { ok: true };
     },

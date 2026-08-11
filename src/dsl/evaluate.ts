@@ -25,7 +25,9 @@ import {
   resolveRoleArg,
   resolveMemberArg,
   userIdOf,
+  GUARD_TARGETS,
   type FailureData,
+  type GuardSubject,
 } from './guards.js';
 import { effects, pendingOf, EffectError } from './effects.js';
 import { getCooldownRemaining, setCooldown } from '../services/cooldowns.js';
@@ -521,7 +523,27 @@ export async function evaluate(
 
     const guard = guards.get(node.name);
     if (guard) {
-      const result = await guard(meta, args, ctx);
+      const targetIndex = GUARD_TARGETS.get(node.name);
+      const targetRaw =
+        targetIndex === undefined ? '' : (args[targetIndex] ?? '').trim();
+
+      let subject: GuardSubject = { member: ctx.member, isSelf: true };
+      if (targetRaw.length > 0) {
+        const targetId = userIdOf(targetRaw);
+        if (!targetId) {
+          return fail(`this autoresponder has a broken {${node.name}} tag !`);
+        }
+        const member = await resolveMemberArg(ctx, targetId);
+        if (!member) {
+          return fail(`<@${targetId}> isn't in this server !`, {
+            'target.user': `<@${targetId}>`,
+            'target.id': targetId,
+          });
+        }
+        subject = { member, isSelf: member.id === ctx.member.id };
+      }
+
+      const result = await guard(meta, args, ctx, subject);
       if (!result.ok) {
         return fail(result.message, result.data);
       }
