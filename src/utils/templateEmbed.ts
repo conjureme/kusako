@@ -3,6 +3,7 @@ import { codeBlock, type EmbedBuilder, type Guild } from 'discord.js';
 import type { MatchMode } from '../services/autoresponders/store.js';
 import { parse } from '../dsl/parser.js';
 import { parseAmount, formatDuration } from '../dsl/args.js';
+import { GUARD_TARGETS } from '../dsl/guards.js';
 import type { PlaceholderNode } from '../dsl/ast.js';
 import { isLevelingEnabled } from '../services/levels/store.js';
 import { serverEmbed } from './style.js';
@@ -137,29 +138,41 @@ export function templateTraits(response: string): {
   const guards: string[] = [];
   for (const node of nodes) {
     const arg = (node.args[0] ?? '').trim();
+    const targetIndex = GUARD_TARGETS.get(node.name);
+    const targetRaw =
+      targetIndex === undefined ? '' : (node.args[targetIndex] ?? '').trim();
+    const on = targetRaw.length > 0 ? userBadge(targetRaw) : null;
+    const about = (phrase: string) => (on ? `${on}: ${phrase}` : phrase);
+
     if (node.name === 'requirebal') {
-      guards.push(`${amountBadge(arg)}+ balance`);
+      guards.push(about(`${amountBadge(arg)}+ balance`));
     } else if (node.name === 'requirelevel') {
-      guards.push(`level ${arg}+`);
+      guards.push(about(`level ${arg}+`));
     } else if (node.name === 'requireitem') {
       const qty = (node.args[1] ?? '').trim();
-      guards.push(qty.length > 0 ? `needs ${qty}× ${arg}` : `needs ${arg}`);
+      guards.push(
+        about(qty.length > 0 ? `needs ${qty}× ${arg}` : `needs ${arg}`),
+      );
     } else if (node.name === 'requirechannel') {
       guards.push(`in ${channelBadge(arg)}`);
     } else if (node.name === 'denychannel') {
       guards.push(`not in ${channelBadge(arg)}`);
     } else if (node.name === 'requirerole') {
-      guards.push(`for ${roleBadge(arg)}`);
+      guards.push(
+        on ? `${on}: has ${roleBadge(arg)}` : `for ${roleBadge(arg)}`,
+      );
     } else if (node.name === 'denyrole') {
-      guards.push(`not for ${roleBadge(arg)}`);
+      guards.push(
+        on ? `${on}: not ${roleBadge(arg)}` : `not for ${roleBadge(arg)}`,
+      );
     } else if (node.name === 'requireuser') {
       guards.push(`only for ${userBadge(arg)}`);
     } else if (node.name === 'denyuser') {
       guards.push(`not for ${userBadge(arg)}`);
     } else if (node.name === 'requireperm') {
-      guards.push(`with ${arg} perms`);
+      guards.push(about(`with ${arg} perms`));
     } else if (node.name === 'denyperm') {
-      guards.push(`without ${arg} perms`);
+      guards.push(about(`without ${arg} perms`));
     }
   }
   const argCounts = nodes
