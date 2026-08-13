@@ -22,6 +22,37 @@ export function parseAmount(value: string): number | null {
   return Number.isSafeInteger(n) ? n : null;
 }
 
+const DURATION_UNITS: Record<string, number> = {
+  s: 1,
+  m: 60,
+  h: 3600,
+  d: 86_400,
+  w: 604_800,
+};
+
+export function parseDuration(input: string): number | null {
+  const text = input.trim().toLowerCase().replace(/\s+/g, '');
+  if (text.length === 0) return null;
+
+  if (/^\d+$/.test(text)) {
+    const bare = Number(text);
+    return bare > 0 && bare < 1_000_000_000 ? bare : null;
+  }
+
+  const parts = [...text.matchAll(/(\d+)([smhdw])/g)];
+  if (parts.length === 0) return null;
+
+  const consumed = parts.reduce((sum, part) => sum + part[0].length, 0);
+  if (consumed !== text.length) return null;
+
+  let total = 0;
+  for (const part of parts) {
+    total += Number(part[1]) * (DURATION_UNITS[part[2] ?? ''] ?? 0);
+  }
+
+  return total > 0 ? total : null;
+}
+
 export function clampDuration(seconds: number | null): number {
   if (seconds === null) return 0;
   return Math.min(Math.max(seconds, 0), YEAR_SECONDS);
