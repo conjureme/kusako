@@ -80,11 +80,83 @@ function checkTargetArg(
   }
 }
 
-export function templateIssues(response: string): string | null {
-  const errors = validateTemplate(parse(response));
+function issueMessage(errors: string[]): string | null {
   if (errors.length === 0) return null;
 
   return `hmm, that reply has some problems !!\n${errors.map((e) => `• ${e}`).join('\n')}`;
+}
+
+export function templateIssues(response: string): string | null {
+  return issueMessage(validateTemplate(parse(response)));
+}
+
+export function subjectlessTemplateIssues(response: string): string | null {
+  const nodes = parse(response);
+  return issueMessage([
+    ...validateTemplate(nodes),
+    ...subjectlessIssues(nodes),
+  ]);
+}
+
+const NO_SUBJECT = new Map<string, string>([
+  ['cooldown', '{cooldown} has nobody to cool down here'],
+  ['togglerole', '{togglerole} is self only, so it has nobody to toggle here'],
+  ['dm', '{dm} has nobody to send to here'],
+  [
+    'requireuser',
+    '{requireuser} checks whoever triggered a reply, and nothing triggers this one',
+  ],
+  [
+    'denyuser',
+    '{denyuser} checks whoever triggered a reply, and nothing triggers this one',
+  ],
+  [
+    'requirearg',
+    '{requirearg} reads the triggering message, and there is no message here',
+  ],
+]);
+
+const SUBJECT_ARGS = new Map<string, number>([
+  ['modifybal', 1],
+  ['modifyinv', 2],
+  ['giverole', 1],
+  ['takerole', 1],
+  ['temprole', 2],
+  ['setnick', 1],
+]);
+
+export function subjectlessIssues(nodes: Node[]): string[] {
+  const found = new Set<string>();
+
+  for (const node of nodes) {
+    if (node.kind !== 'placeholder') continue;
+
+    const never = NO_SUBJECT.get(node.name);
+    if (never) {
+      found.add(never);
+      continue;
+    }
+
+    const needsUser = (index: number): void => {
+      if ((node.args[index] ?? '').trim().length > 0) return;
+      found.add(
+        `nothing triggers this reply, so {${node.name}} needs a user named as its last argument`,
+      );
+    };
+
+    const acts = SUBJECT_ARGS.get(node.name) ?? GUARD_TARGETS.get(node.name);
+    if (acts !== undefined) {
+      needsUser(acts);
+      continue;
+    }
+
+    const target = placeholders.get(node.name)?.target;
+    if (target === 'user' || target === 'user1') {
+      needsUser(targetArgIndex(target));
+    }
+  }
+
+  return [...found];
 }
 
 export function validateTemplate(nodes: Node[]): string[] {
