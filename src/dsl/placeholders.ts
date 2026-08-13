@@ -51,7 +51,10 @@ async function memberOf(
   target: string | undefined,
 ): Promise<GuildMember> {
   const raw = (target ?? '').trim();
-  if (raw.length === 0) return ctx.member;
+  if (raw.length === 0) {
+    if (!ctx.member) throw new Error('no subject');
+    return ctx.member;
+  }
 
   const member = await resolveMemberArg(ctx, raw);
   if (!member) throw new Error(`no member: ${raw}`);

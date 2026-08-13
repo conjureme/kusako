@@ -181,7 +181,7 @@ export async function evaluate(
 ): Promise<EvalResult> {
   const meta: EvalMeta = {
     guildId: ctx.guild.id,
-    userId: ctx.member.id,
+    userId: ctx.member?.id ?? '',
     scope,
   };
 
@@ -426,13 +426,13 @@ export async function evaluate(
       // temprole's duration sits in arg 1, so its target shifts to arg 2
       const targetRaw = (args[temp ? 2 : 1] ?? '').trim();
       const targetId =
-        targetRaw.length > 0 ? userIdOf(targetRaw) : ctx.member.id;
+        targetRaw.length > 0 ? userIdOf(targetRaw) : (ctx.member?.id ?? null);
       const forSeconds = temp ? clampDuration(parseAmount(args[1] ?? '')) : 0;
       if (!role || !targetId || (temp && forSeconds <= 0)) {
         current += node.raw;
         continue;
       }
-      if (targetId !== ctx.member.id) {
+      if (targetId !== ctx.member?.id) {
         const member = await resolveMemberArg(ctx, targetId);
         if (!member) {
           return fail(`<@${targetId}> isn't in this server !`, {
@@ -452,7 +452,7 @@ export async function evaluate(
 
     if (node.name === 'togglerole') {
       const role = resolveRoleArg(ctx, args[0] ?? '');
-      if (!role) {
+      if (!role || !ctx.member) {
         current += node.raw;
         continue;
       }
@@ -477,7 +477,7 @@ export async function evaluate(
       const nick = (args[0] ?? '').trim();
       const targetRaw = (args[1] ?? '').trim();
       const targetId =
-        targetRaw.length > 0 ? userIdOf(targetRaw) : ctx.member.id;
+        targetRaw.length > 0 ? userIdOf(targetRaw) : (ctx.member?.id ?? null);
       if (nick.length === 0 || !targetId) {
         current += node.raw;
         continue;
@@ -527,7 +527,7 @@ export async function evaluate(
       const targetRaw =
         targetIndex === undefined ? '' : (args[targetIndex] ?? '').trim();
 
-      let subject: GuardSubject = { member: ctx.member, isSelf: true };
+      let subject: GuardSubject;
       if (targetRaw.length > 0) {
         const targetId = userIdOf(targetRaw);
         if (!targetId) {
@@ -540,7 +540,12 @@ export async function evaluate(
             'target.id': targetId,
           });
         }
-        subject = { member, isSelf: member.id === ctx.member.id };
+        subject = { member, isSelf: member.id === ctx.member?.id };
+      } else {
+        if (!ctx.member) {
+          return fail(`this autoresponder has a broken {${node.name}} tag !`);
+        }
+        subject = { member: ctx.member, isSelf: true };
       }
 
       const result = await guard(meta, args, ctx, subject);

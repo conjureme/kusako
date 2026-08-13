@@ -33,7 +33,7 @@ export class PendingEffects {
 }
 
 export interface RenderContext {
-  member: GuildMember;
+  member?: GuildMember;
   guild: Guild;
   channel: GuildTextBasedChannel;
   message?: Message;

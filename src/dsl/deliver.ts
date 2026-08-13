@@ -28,13 +28,16 @@ import type { Segment, MessageActions } from './evaluate.js';
 function responderButton(
   guildId: string,
   name: string,
-  invokerId: string,
+  invokerId: string | undefined,
 ): ButtonBuilder {
   const responder = getButtonResponder(guildId, name);
   const button = new ButtonBuilder()
     .setStyle(resolveButtonStyle(responder?.style ?? null))
     .setCustomId(
-      buttonCustomId(name, responder?.invokerOnly ? invokerId : undefined),
+      buttonCustomId(
+        name,
+        responder?.invokerOnly && invokerId ? invokerId : undefined,
+      ),
     );
 
   const emoji = responder?.emoji;
@@ -55,7 +58,7 @@ function responderButton(
 function buildButtonRows(
   buttons: MessageActions['buttons'],
   guildId: string,
-  invokerId: string,
+  invokerId: string | undefined,
 ): ActionRowBuilder<ButtonBuilder>[] {
   const rows: ActionRowBuilder<ButtonBuilder>[] = [];
   for (let i = 0; i < buttons.length; i += 5) {
@@ -120,7 +123,7 @@ async function sendEphemeral(
 }
 
 export interface DeliveryTarget {
-  member: GuildMember;
+  member?: GuildMember;
   channel: GuildTextBasedChannel;
   triggerMessage?: Message;
   interaction?: RepliableInteraction;
@@ -140,7 +143,7 @@ export async function deliver(
   const base = redirect && redirect.isTextBased() ? redirect : target.channel;
 
   const destination = actions.dm
-    ? await target.member.createDM().catch(() => null)
+    ? ((await target.member?.createDM().catch(() => null)) ?? null)
     : base;
 
   let firstSent: Message | null = null;
@@ -148,8 +151,8 @@ export async function deliver(
     actions.buttons.length > 0
       ? buildButtonRows(
           actions.buttons,
-          target.member.guild.id,
-          target.member.id,
+          target.channel.guild.id,
+          target.member?.id,
         )
       : [];
   let buttonsAttached = false;
@@ -188,7 +191,7 @@ export async function deliver(
             content,
             offset,
             segment.embeds,
-            target.member.guild.id,
+            target.channel.guild.id,
           );
         }
       } catch (err) {
@@ -228,7 +231,7 @@ export async function deliver(
     }
   }
 
-  const members = target.member.guild.members;
+  const members = target.channel.guild.members;
   for (const action of actions.roleActions) {
     const options = { user: action.userId, role: action.roleId };
     try {
@@ -239,7 +242,7 @@ export async function deliver(
       // {temprole} doesn't leave a timer that strips a role they already had
       if (action.forSeconds) {
         scheduleRoleRemoval(
-          target.member.guild.id,
+          target.channel.guild.id,
           action.userId,
           action.roleId,
           action.forSeconds,
@@ -266,7 +269,7 @@ export async function deliver(
       firstSent.channelId,
       firstSent.id,
       actions.deleteReplyAfter,
-      target.member.guild.id,
+      target.channel.guild.id,
     );
   }
 
