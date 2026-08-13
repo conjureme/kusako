@@ -20,6 +20,10 @@ export function gameScope(game: string): string {
   return `game:${game}`;
 }
 
+export function scheduleScope(id: number): string {
+  return `schedule:${id}`;
+}
+
 export function getCooldownRemaining(
   guildId: string,
   scope: string,
