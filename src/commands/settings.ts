@@ -24,6 +24,13 @@ import {
   findSetting,
   SETTINGS,
 } from '../services/settings/registry.js';
+import {
+  isValidTimeZone,
+  setGuildTimezone,
+  timeZones,
+  zonedParts,
+  formatWallTime,
+} from '../services/timezone.js';
 import { commandMention } from '../utils/commandMentions.js';
 import {
   serverEmbed,
@@ -31,6 +38,28 @@ import {
   SPACER_IMAGE,
   NO_DMS,
 } from '../utils/style.js';
+
+const SUGGESTED_ZONES = [
+  'America/Los_Angeles',
+  'America/Denver',
+  'America/Chicago',
+  'America/New_York',
+  'America/Sao_Paulo',
+  'Europe/London',
+  'Europe/Paris',
+  'Europe/Berlin',
+  'Europe/Moscow',
+  'Africa/Lagos',
+  'Africa/Johannesburg',
+  'Asia/Dubai',
+  'Asia/Kolkata',
+  'Asia/Singapore',
+  'Asia/Tokyo',
+  'Asia/Seoul',
+  'Australia/Sydney',
+  'Pacific/Auckland',
+  'UTC',
+];
 
 function groupSelect(
   selected: string | null,
@@ -238,8 +267,32 @@ export const settings: SlashCommand = {
                 .setDescription('should members earn xp in this server?')
                 .setRequired(true),
             ),
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName('timezone')
+            .setDescription('set the clock sako reads for scheduled posts')
+            .addStringOption((o) =>
+              o
+                .setName('zone')
+                .setDescription('a timezone like America/Chicago')
+                .setAutocomplete(true)
+                .setRequired(true),
+            ),
         ),
     ) as SlashCommandBuilder,
+
+  async autocomplete(interaction) {
+    const focused = interaction.options.getFocused().trim().toLowerCase();
+    const pool =
+      focused.length === 0
+        ? SUGGESTED_ZONES
+        : timeZones().filter((zone) => zone.toLowerCase().includes(focused));
+
+    await interaction.respond(
+      pool.slice(0, 25).map((zone) => ({ name: zone, value: zone })),
+    );
+  },
 
   async execute(interaction) {
     if (!interaction.inCachedGuild()) {
@@ -314,6 +367,27 @@ export const settings: SlashCommand = {
         .setTitle('✦ head pats updated !')
         .setDescription(
           `reward: ${currency.emoji} **${now.minReward.toLocaleString('en-US')}-${now.maxReward.toLocaleString('en-US')} ${currency.name}**, cooldown: **${formatDuration(now.cooldownSeconds)}**, pats are **${state}** !`,
+        );
+
+      await interaction.reply({ embeds: [embed] });
+      return;
+    }
+
+    if (group === 'set' && sub === 'timezone') {
+      const zone = interaction.options.getString('zone', true).trim();
+      if (!isValidTimeZone(zone)) {
+        await interaction.reply({
+          content: `i don't know the timezone **${zone}**!! pick one from the list, like \`America/Chicago\``,
+        });
+        return;
+      }
+
+      setGuildTimezone(guildId, zone);
+      const now = zonedParts(Date.now(), zone);
+      const embed = serverEmbed(interaction.guild)
+        .setTitle('✦ timezone updated !')
+        .setDescription(
+          `scheduled posts follow **${zone}** now; it's ${formatWallTime(now.hour * 60 + now.minute)} there`,
         );
 
       await interaction.reply({ embeds: [embed] });

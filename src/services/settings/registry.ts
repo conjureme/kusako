@@ -6,6 +6,11 @@ import { isLevelingEnabled } from '../levels/store.js';
 import { getEventReply } from '../guildEvents/store.js';
 import { EVENTS } from '../guildEvents/registry.js';
 import { formatDuration } from '../../dsl/args.js';
+import {
+  getGuildTimezone,
+  hasGuildTimezone,
+  DEFAULT_TIMEZONE,
+} from '../timezone.js';
 
 export interface SettingEntry {
   id: string;
@@ -27,6 +32,7 @@ export const GROUP_LABELS: Record<string, string> = {
   economy: 'economy',
   leveling: 'leveling',
   events: 'events',
+  schedule: 'scheduled posts',
 };
 
 export const SETTINGS: SettingEntry[] = [
@@ -70,6 +76,19 @@ export const SETTINGS: SettingEntry[] = [
     knobs: ['enabled'],
     render(guildId) {
       return [isLevelingEnabled(guildId) ? 'on' : 'off'];
+    },
+  },
+  {
+    id: 'timezone',
+    group: 'schedule',
+    label: 'timezone',
+    blurb: 'the clock sako reads when she posts on a schedule !',
+    command: '/settings set timezone',
+    knobs: ['zone'],
+    render(guildId) {
+      return hasGuildTimezone(guildId)
+        ? [getGuildTimezone(guildId)]
+        : [`${DEFAULT_TIMEZONE} ━ not set yet`];
     },
   },
   ...EVENTS.map((event) => ({
