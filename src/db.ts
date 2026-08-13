@@ -98,6 +98,27 @@ CREATE TABLE IF NOT EXISTS scheduled_tasks (
 CREATE INDEX IF NOT EXISTS idx_scheduled_tasks_run_at
   ON scheduled_tasks (run_at);
 
+CREATE TABLE IF NOT EXISTS scheduled_templates (
+  guild_id TEXT NOT NULL,
+  id INTEGER NOT NULL,
+  channel_id TEXT NOT NULL,
+  response TEXT NOT NULL,
+  repeat_kind TEXT NOT NULL,
+  weekday INTEGER,
+  minute_of_day INTEGER,
+  interval_seconds INTEGER,
+  anchor_at INTEGER,
+  next_run INTEGER NOT NULL,
+  state TEXT NOT NULL DEFAULT 'active',
+  author_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (guild_id, id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_scheduled_templates_due
+  ON scheduled_templates (state, next_run);
+
 CREATE TABLE IF NOT EXISTS embeds (
   guild_id TEXT NOT NULL,
   name TEXT NOT NULL,
