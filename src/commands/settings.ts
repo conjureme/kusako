@@ -1,12 +1,4 @@
-import {
-  SlashCommandBuilder,
-  PermissionFlagsBits,
-  MessageFlags,
-  ActionRowBuilder,
-  StringSelectMenuBuilder,
-  type Guild,
-  type StringSelectMenuInteraction,
-} from 'discord.js';
+import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 
 import type { SlashCommand } from '../client.js';
 import { getCurrency, setCurrency } from '../services/economy/guild.js';
@@ -19,25 +11,13 @@ import {
 import { setLevelingEnabled } from '../services/levels/store.js';
 import { formatDuration } from '../dsl/args.js';
 import {
-  groups,
-  findGroup,
-  findSetting,
-  SETTINGS,
-} from '../services/settings/registry.js';
-import {
   isValidTimeZone,
   setGuildTimezone,
   timeZones,
   zonedParts,
   formatWallTime,
 } from '../services/timezone.js';
-import { commandMention } from '../utils/commandMentions.js';
-import {
-  serverEmbed,
-  spacerFile,
-  SPACER_IMAGE,
-  NO_DMS,
-} from '../utils/style.js';
+import { serverEmbed, NO_DMS } from '../utils/style.js';
 
 const SUGGESTED_ZONES = [
   'America/Los_Angeles',
@@ -61,147 +41,13 @@ const SUGGESTED_ZONES = [
   'UTC',
 ];
 
-function groupSelect(
-  selected: string | null,
-): ActionRowBuilder<StringSelectMenuBuilder> {
-  const menu = new StringSelectMenuBuilder()
-    .setCustomId('settings:group')
-    .setPlaceholder('pick a group')
-    .addOptions(
-      groups().map((group) => ({
-        label: group.label,
-        value: group.id,
-        description: `${group.settings.length} setting${group.settings.length === 1 ? '' : 's'}`,
-        default: group.id === selected,
-      })),
-    );
-
-  return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu);
-}
-
-function settingSelect(
-  groupId: string,
-  selected: string | null,
-): ActionRowBuilder<StringSelectMenuBuilder> | null {
-  const group = findGroup(groupId);
-  if (!group) return null;
-
-  const menu = new StringSelectMenuBuilder()
-    .setCustomId('settings:setting')
-    .setPlaceholder('pick a setting to change')
-    .addOptions(
-      group.settings.map((setting) => ({
-        label: setting.label,
-        value: setting.id,
-        default: setting.id === selected,
-      })),
-    );
-
-  return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu);
-}
-
-function overviewPayload(guild: Guild) {
-  const all = groups();
-  const count = SETTINGS.length;
-  const header = `꒰ control panel ꒱ *${all.length} group${all.length === 1 ? '' : 's'} ⊹ ${count} setting${count === 1 ? '' : 's'}*`;
-
-  const blocks = all.map((group) =>
-    [
-      `⊹ ࣪ ˖ **${group.label}** ˖ ࣪ ⊹`,
-      `-# ✧ ${group.settings.map((setting) => setting.label).join(' ━ ')}`,
-    ].join('\n'),
-  );
-
-  const embed = serverEmbed(guild)
-    .setDescription(
-      [header, ...blocks, "⁀જ➣ *pick a group below to see what's set !*"].join(
-        '\n\n',
-      ),
-    )
-    .setImage(SPACER_IMAGE);
-
-  return {
-    embeds: [embed],
-    components: [groupSelect(null)],
-    files: [spacerFile()],
-  };
-}
-
-function groupPayload(guild: Guild, groupId: string) {
-  const group = findGroup(groupId);
-  if (!group) return overviewPayload(guild);
-
-  const header = `꒰ ${group.label} ꒱ *${group.settings.length} setting${group.settings.length === 1 ? '' : 's'}*`;
-  const blocks = group.settings.map((setting) =>
-    [
-      `ᯓ➤ **${setting.label}**`,
-      ...setting.render(guild.id).map((line) => `-# ✧ ${line}`),
-    ].join('\n'),
-  );
-
-  const embed = serverEmbed(guild)
-    .setAuthor({
-      name: `${guild.name} ⋆ ${group.label}`,
-      iconURL: guild.iconURL({ size: 256 }) ?? undefined,
-    })
-    .setDescription(
-      [
-        header,
-        ...blocks,
-        "⁀જ➣ *pick a setting below and i'll send you the command !*",
-      ].join('\n\n'),
-    )
-    .setImage(SPACER_IMAGE);
-
-  const rows = [groupSelect(group.id)];
-  const second = settingSelect(group.id, null);
-  if (second) rows.push(second);
-
-  return { embeds: [embed], components: rows, files: [spacerFile()] };
-}
-
-export async function handleSettingsComponents(
-  interaction: StringSelectMenuInteraction,
-): Promise<void> {
-  if (!interaction.inCachedGuild()) return;
-
-  if (!interaction.memberPermissions.has(PermissionFlagsBits.ManageGuild)) {
-    await interaction.reply({
-      content: 'you need **manage server** to poke at the settings !',
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  const choice = interaction.values[0] ?? '';
-
-  if (interaction.customId === 'settings:group') {
-    await interaction.update(groupPayload(interaction.guild, choice));
-    return;
-  }
-
-  const setting = findSetting(choice);
-  if (!setting) {
-    await interaction.reply({
-      content: "i don't know that setting ! run /settings view again c:",
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
-
-  await interaction.reply({
-    content: `you can change that with ${commandMention(setting.command)} !`,
-    flags: MessageFlags.Ephemeral,
-  });
-}
-
 export const settings: SlashCommand = {
   data: new SlashCommandBuilder()
     .setName('settings')
     .setDescription('configure sako for this server')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .addSubcommand((sub) =>
-      sub.setName('view').setDescription('see the current server settings'),
+      sub.setName('view').setDescription('coming back soon !'),
     )
     .addSubcommandGroup((group) =>
       group
@@ -307,7 +153,11 @@ export const settings: SlashCommand = {
     const sub = interaction.options.getSubcommand();
 
     if (group === null && sub === 'view') {
-      await interaction.reply(overviewPayload(interaction.guild));
+      const embed = serverEmbed(interaction.guild).setDescription(
+        "working on it !! this one is getting rebuilt, so it's away for now",
+      );
+
+      await interaction.reply({ embeds: [embed] });
       return;
     }
 
