@@ -20,6 +20,7 @@ import { buttonresponders } from './buttonresponders.js';
 import { give } from './give.js';
 import { modifyrolebalance } from './modifyrolebalance.js';
 import { schedule } from './schedule.js';
+import { tickets } from './tickets.js';
 
 export const commands: SlashCommand[] = [
   ping,
@@ -42,4 +43,5 @@ export const commands: SlashCommand[] = [
   give,
   modifyrolebalance,
   schedule,
+  tickets,
 ];
