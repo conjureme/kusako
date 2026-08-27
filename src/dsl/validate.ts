@@ -8,6 +8,7 @@ import {
   resolvePermArg,
   FAILURE_CAPTURES,
   GUARD_TARGETS,
+  guards,
 } from './guards.js';
 import { MAX_LEVEL } from '../services/levels/store.js';
 import { placeholders, targetArgIndex } from './placeholders.js';
@@ -25,6 +26,14 @@ const EPHEMERAL_CONFLICTS: Array<[string, string]> = [
   ['delete_reply', "private replies fade on their own, i can't delete them"],
   ['reactreply', 'nobody can react to a private reply'],
 ];
+
+const TICKET_CONFLICTS = new Map<string, string>([
+  ['dm', 'the greeting has to land in the ticket itself'],
+  ['send', 'the greeting has to land in the ticket itself'],
+  ['ephemeral', 'everyone in the ticket needs to see the greeting'],
+  ['delete_reply', 'that takes the greeting and the close button with it'],
+  ['cooldown', 'the ticket type carries its own cooldown already'],
+]);
 
 function checkDuration(
   arg: string | undefined,
@@ -157,6 +166,37 @@ export function subjectlessIssues(nodes: Node[]): string[] {
   }
 
   return [...found];
+}
+
+export function ticketIssues(nodes: Node[]): string[] {
+  const errors: string[] = [];
+  const seen = new Set<string>();
+
+  for (const node of nodes) {
+    if (node.kind !== 'placeholder') continue;
+    if (seen.has(node.name)) continue;
+
+    if (guards.has(node.name)) {
+      seen.add(node.name);
+      errors.push(
+        `{${node.name}} can't go in a ticket greeting ! the channel already exists by the time this runs, so a guard failing would just leave an empty ticket behind`,
+      );
+      continue;
+    }
+
+    const why = TICKET_CONFLICTS.get(node.name);
+    if (why) {
+      seen.add(node.name);
+      errors.push(`{${node.name}} can't go in a ticket greeting ! ${why}`);
+    }
+  }
+
+  return errors;
+}
+
+export function ticketGreetingIssues(response: string): string | null {
+  const nodes = parse(response);
+  return issueMessage([...validateTemplate(nodes), ...ticketIssues(nodes)]);
 }
 
 export function validateTemplate(nodes: Node[]): string[] {
