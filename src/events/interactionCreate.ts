@@ -5,8 +5,16 @@ import { handleEmbedComponents } from '../commands/embeds.js';
 import { handleItemComponents } from '../commands/items.js';
 import { handleButtonResponderComponents } from '../commands/buttonresponders.js';
 import { isButtonCustomId } from '../services/buttons/store.js';
-import { isTicketCustomId } from '../services/tickets/store.js';
-import { openTicket } from '../services/tickets/fire.js';
+import {
+  isTicketCustomId,
+  TICKET_CLOSE_ID,
+  TICKET_REOPEN_ID,
+} from '../services/tickets/store.js';
+import {
+  openTicket,
+  closeTicket,
+  reopenTicket,
+} from '../services/tickets/fire.js';
 import { buildPage } from '../services/pageRegistry.js';
 import { logger } from '../logger.js';
 
@@ -50,10 +58,13 @@ export function registerInteractionCreate(client: SakoClient): void {
     }
 
     if (interaction.isButton() && isTicketCustomId(interaction.customId)) {
+      const { customId } = interaction;
       try {
-        await openTicket(interaction);
+        if (customId === TICKET_CLOSE_ID) await closeTicket(interaction);
+        else if (customId === TICKET_REOPEN_ID) await reopenTicket(interaction);
+        else await openTicket(interaction);
       } catch (err) {
-        logger.error({ err, id: interaction.customId }, 'ticket open failed');
+        logger.error({ err, id: customId }, 'ticket button failed');
       }
       return;
     }

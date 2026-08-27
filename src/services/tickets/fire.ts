@@ -1,4 +1,7 @@
 import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
   ChannelType,
   MessageFlags,
   PermissionFlagsBits,
@@ -11,12 +14,18 @@ import {
 
 import {
   attachTicketChannel,
+  getTicketByChannel,
   getTicketCategories,
   getTicketType,
+  markTicketClosed,
+  markTicketOpen,
   parseTicketOpenId,
   releaseReservation,
   reserveTicket,
   ticketChannelName,
+  TICKET_CLOSE_ID,
+  TICKET_REOPEN_ID,
+  type Ticket,
   type TicketType,
 } from './store.js';
 import {
@@ -68,12 +77,38 @@ function buildOverwrites(
   return overwrites;
 }
 
-function liveCategoryId(guild: Guild): string | undefined {
-  const { live } = getTicketCategories(guild.id);
-  if (!live) return undefined;
+function categoryId(guild: Guild, which: 'live' | 'archive'): string | null {
+  const id = getTicketCategories(guild.id)[which];
+  if (!id) return null;
 
-  const category = guild.channels.cache.get(live);
-  return category?.type === ChannelType.GuildCategory ? live : undefined;
+  const category = guild.channels.cache.get(id);
+  return category?.type === ChannelType.GuildCategory ? id : null;
+}
+
+export function controlRow(open: boolean): ActionRowBuilder<ButtonBuilder> {
+  const button = open
+    ? new ButtonBuilder()
+        .setCustomId(TICKET_CLOSE_ID)
+        .setLabel('close ticket')
+        .setStyle(ButtonStyle.Danger)
+    : new ButtonBuilder()
+        .setCustomId(TICKET_REOPEN_ID)
+        .setLabel('reopen ticket')
+        .setStyle(ButtonStyle.Secondary);
+
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(button);
+}
+
+function canManageTicket(
+  member: GuildMember,
+  ticket: Ticket,
+  type: TicketType | null,
+): boolean {
+  if (member.id === ticket.openerId) return true;
+  if (member.permissions.has(PermissionFlagsBits.ManageGuild)) return true;
+  if (!type) return false;
+
+  return type.roleIds.some((id) => member.roles.cache.has(id));
 }
 
 async function postGreeting(
@@ -147,7 +182,7 @@ export async function openTicket(
     channel = await guild.channels.create({
       name: ticketChannelName(type.key, number),
       type: ChannelType.GuildText,
-      parent: liveCategoryId(guild),
+      parent: categoryId(guild, 'live') ?? undefined,
       topic: `opened by <@${opener.id}>`,
       permissionOverwrites: buildOverwrites(guild, type, opener.id),
       reason: `ticket ${type.key} #${number} opened by ${opener.user.tag}`,
@@ -179,4 +214,164 @@ export async function openTicket(
       'ticket greeting failed to send',
     );
   }
+
+  await channel
+    .send({ components: [controlRow(true)] })
+    .catch((err: unknown) =>
+      logger.error({ err, channel: channel.id }, 'ticket controls failed'),
+    );
+}
+
+async function nudge(
+  interaction: ButtonInteraction,
+  message: string,
+): Promise<void> {
+  await interaction
+    .followUp({ content: message, flags: MessageFlags.Ephemeral })
+    .catch(() => null);
+}
+
+export async function closeTicket(
+  interaction: ButtonInteraction,
+): Promise<void> {
+  if (!interaction.inCachedGuild() || !interaction.channel) return;
+
+  await interaction.deferUpdate();
+
+  const { guild, channel } = interaction;
+  const ticket = getTicketByChannel(channel.id);
+  if (!ticket) {
+    await nudge(interaction, "i don't have a record of this ticket !");
+    return;
+  }
+
+  const type = getTicketType(guild.id, ticket.typeKey);
+  if (!canManageTicket(interaction.member, ticket, type)) {
+    await nudge(interaction, "this one isn't yours to close !");
+    return;
+  }
+
+  if (ticket.state !== 'open') {
+    await nudge(interaction, 'that one is already closed !');
+    return;
+  }
+
+  if (channel.type !== ChannelType.GuildText) return;
+
+  try {
+    await channel.permissionOverwrites.edit(
+      ticket.openerId,
+      { SendMessages: false },
+      { reason: `ticket closed by ${interaction.user.tag}` },
+    );
+  } catch (err) {
+    logger.error({ err, channel: channel.id }, 'ticket lock failed');
+    await nudge(
+      interaction,
+      "i couldn't lock this one,, check my permissions and try again !",
+    );
+    return;
+  }
+
+  markTicketClosed(channel.id);
+  await interaction.message
+    .edit({ components: [controlRow(false)] })
+    .catch(() => null);
+
+  const archive = categoryId(guild, 'archive');
+  let moved = archive === null;
+  if (archive !== null) {
+    try {
+      await channel.setParent(archive, {
+        lockPermissions: false,
+        reason: `ticket closed by ${interaction.user.tag}`,
+      });
+      moved = true;
+    } catch (err) {
+      logger.warn({ err, channel: channel.id }, 'ticket archive move failed');
+    }
+  }
+
+  await channel
+    .send({
+      content: `-# ✦ closed by <@${interaction.user.id}>${moved ? '' : ' · i left it here, the archive category is full or missing'}`,
+      allowedMentions: { parse: [] },
+    })
+    .catch(() => null);
+}
+
+export async function reopenTicket(
+  interaction: ButtonInteraction,
+): Promise<void> {
+  if (!interaction.inCachedGuild() || !interaction.channel) return;
+
+  await interaction.deferUpdate();
+
+  const { guild, channel } = interaction;
+  const ticket = getTicketByChannel(channel.id);
+  if (!ticket) {
+    await nudge(interaction, "i don't have a record of this ticket !");
+    return;
+  }
+
+  const type = getTicketType(guild.id, ticket.typeKey);
+  if (!canManageTicket(interaction.member, ticket, type)) {
+    await nudge(interaction, "this one isn't yours to reopen !");
+    return;
+  }
+
+  if (ticket.state !== 'closed') {
+    await nudge(interaction, 'that one is already open !');
+    return;
+  }
+
+  if (channel.type !== ChannelType.GuildText) return;
+
+  try {
+    await channel.permissionOverwrites.edit(
+      ticket.openerId,
+      { SendMessages: true },
+      { reason: `ticket reopened by ${interaction.user.tag}` },
+    );
+  } catch (err) {
+    logger.error({ err, channel: channel.id }, 'ticket unlock failed');
+    await nudge(
+      interaction,
+      "i couldn't unlock this one,, check my permissions and try again !",
+    );
+    return;
+  }
+
+  markTicketOpen(channel.id);
+  await interaction.message
+    .edit({ components: [controlRow(true)] })
+    .catch(() => null);
+
+  const live = categoryId(guild, 'live');
+  let moved = live === null;
+  if (live !== null) {
+    try {
+      await channel.setParent(live, {
+        lockPermissions: false,
+        reason: `ticket reopened by ${interaction.user.tag}`,
+      });
+      moved = true;
+    } catch (err) {
+      logger.warn({ err, channel: channel.id }, 'ticket unarchive move failed');
+    }
+  }
+
+  const byOpener = interaction.user.id === ticket.openerId;
+  const notice = byOpener
+    ? 'ticket reopened !'
+    : `<@${ticket.openerId}> your ticket was reopened by <@${interaction.user.id}> !`;
+
+  await channel
+    .send({
+      content: moved
+        ? notice
+        : `${notice}\n-# ✦ i couldn't move it back, the tickets category is full or missing`,
+      allowedMentions: { users: byOpener ? [] : [ticket.openerId] },
+    })
+    .catch(() => null);
 }
