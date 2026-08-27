@@ -5,6 +5,8 @@ import { handleEmbedComponents } from '../commands/embeds.js';
 import { handleItemComponents } from '../commands/items.js';
 import { handleButtonResponderComponents } from '../commands/buttonresponders.js';
 import { isButtonCustomId } from '../services/buttons/store.js';
+import { isTicketCustomId } from '../services/tickets/store.js';
+import { openTicket } from '../services/tickets/fire.js';
 import { buildPage } from '../services/pageRegistry.js';
 import { logger } from '../logger.js';
 
@@ -43,6 +45,15 @@ export function registerInteractionCreate(client: SakoClient): void {
           { err, id: interaction.customId },
           'button responder failed',
         );
+      }
+      return;
+    }
+
+    if (interaction.isButton() && isTicketCustomId(interaction.customId)) {
+      try {
+        await openTicket(interaction);
+      } catch (err) {
+        logger.error({ err, id: interaction.customId }, 'ticket open failed');
       }
       return;
     }

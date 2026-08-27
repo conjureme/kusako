@@ -121,6 +121,26 @@ export function ticketChannelName(typeKey: string, number: number): string {
   return `${typeKey}-${number.toString().padStart(4, '0')}`;
 }
 
+const OPEN_PREFIX = 'tk:open:';
+
+export const TICKET_CLOSE_ID = 'tk:close';
+export const TICKET_REOPEN_ID = 'tk:reopen';
+
+export function ticketOpenCustomId(typeKey: string): string {
+  return `${OPEN_PREFIX}${typeKey}`;
+}
+
+export function parseTicketOpenId(customId: string): string | null {
+  if (!customId.startsWith(OPEN_PREFIX)) return null;
+
+  const key = customId.slice(OPEN_PREFIX.length);
+  return key.length > 0 ? key : null;
+}
+
+export function isTicketCustomId(customId: string): boolean {
+  return customId.startsWith('tk:');
+}
+
 export function getTicketType(guildId: string, key: string): TicketType | null {
   const row = db()
     .prepare('SELECT * FROM ticket_types WHERE guild_id = ? AND key = ?')
