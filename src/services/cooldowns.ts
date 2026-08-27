@@ -24,6 +24,10 @@ export function scheduleScope(id: number): string {
   return `schedule:${id}`;
 }
 
+export function ticketScope(typeKey: string): string {
+  return `ticket:${typeKey}`;
+}
+
 export function getCooldownRemaining(
   guildId: string,
   scope: string,

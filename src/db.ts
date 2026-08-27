@@ -119,6 +119,38 @@ CREATE TABLE IF NOT EXISTS scheduled_templates (
 CREATE INDEX IF NOT EXISTS idx_scheduled_templates_due
   ON scheduled_templates (state, next_run);
 
+CREATE TABLE IF NOT EXISTS ticket_types (
+  guild_id TEXT NOT NULL,
+  key TEXT NOT NULL,
+  label TEXT NOT NULL,
+  emoji TEXT,
+  style TEXT,
+  role_ids TEXT NOT NULL DEFAULT '[]',
+  greeting TEXT,
+  cooldown_seconds INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (guild_id, key)
+);
+
+CREATE TABLE IF NOT EXISTS tickets (
+  guild_id TEXT NOT NULL,
+  type_key TEXT NOT NULL,
+  number INTEGER NOT NULL,
+  channel_id TEXT,
+  opener_id TEXT NOT NULL,
+  state TEXT NOT NULL DEFAULT 'opening',
+  opened_at INTEGER NOT NULL,
+  closed_at INTEGER,
+  PRIMARY KEY (guild_id, type_key, number)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tickets_channel
+  ON tickets (channel_id);
+
+CREATE INDEX IF NOT EXISTS idx_tickets_opener
+  ON tickets (guild_id, type_key, opener_id, state);
+
 CREATE TABLE IF NOT EXISTS embeds (
   guild_id TEXT NOT NULL,
   name TEXT NOT NULL,
