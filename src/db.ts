@@ -232,6 +232,14 @@ CREATE TABLE IF NOT EXISTS member_xp (
   PRIMARY KEY (guild_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS boosters (
+  guild_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  premium_since INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (guild_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS global_balances (
   user_id TEXT NOT NULL,
   currency TEXT NOT NULL,

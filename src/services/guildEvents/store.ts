@@ -73,6 +73,42 @@ export function setEventChannel(
     .run(guildId, kind, channelId, now, now);
 }
 
+export type BoostTransition = 'started' | 'ended' | null;
+
+export function syncBoostState(
+  guildId: string,
+  userId: string,
+  premiumSince: number | null,
+): BoostTransition {
+  const row = db()
+    .prepare(
+      'SELECT premium_since FROM boosters WHERE guild_id = ? AND user_id = ?',
+    )
+    .get(guildId, userId) as { premium_since: number } | undefined;
+
+  if (premiumSince === null) {
+    if (!row) return null;
+
+    db()
+      .prepare('DELETE FROM boosters WHERE guild_id = ? AND user_id = ?')
+      .run(guildId, userId);
+    return 'ended';
+  }
+
+  if (row?.premium_since === premiumSince) return null;
+
+  db()
+    .prepare(
+      `INSERT INTO boosters (guild_id, user_id, premium_since, updated_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT (guild_id, user_id)
+       DO UPDATE SET premium_since = excluded.premium_since, updated_at = excluded.updated_at`,
+    )
+    .run(guildId, userId, premiumSince, Date.now());
+
+  return 'started';
+}
+
 export function removeEventReply(guildId: string, kind: EventKind): boolean {
   const result = db()
     .prepare(

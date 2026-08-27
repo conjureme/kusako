@@ -6,6 +6,9 @@ import {
 } from 'discord.js';
 
 import type { SakoClient } from '../../client.js';
+import { syncBoostState } from './store.js';
+
+const BOOST_RECENT_MS = 5 * 60_000;
 
 export type EventMember = GuildMember | PartialGuildMember;
 
@@ -44,9 +47,21 @@ export const EVENTS = [
     label: 'boost',
     blurb: 'what sako says when someone boosts !',
     register(client: SakoClient, fire: FireEvent) {
-      client.on(Events.GuildMemberUpdate, async (oldMember, newMember) => {
-        if (oldMember.partial) return;
-        if (oldMember.premiumSince || !newMember.premiumSince) return;
+      client.on(Events.GuildMemberUpdate, async (_oldMember, newMember) => {
+        const premiumSince = newMember.premiumSinceTimestamp;
+        const transition = syncBoostState(
+          newMember.guild.id,
+          newMember.id,
+          premiumSince,
+        );
+
+        if (transition !== 'started') return;
+        if (
+          premiumSince === null ||
+          premiumSince <= Date.now() - BOOST_RECENT_MS
+        )
+          return;
+
         await fire(newMember.guild, newMember);
       });
     },
