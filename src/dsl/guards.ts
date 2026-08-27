@@ -1,6 +1,7 @@
 import {
   PermissionFlagsBits,
   type GuildMember,
+  type PartialGuildMember,
   type PermissionsString,
 } from 'discord.js';
 
@@ -40,7 +41,7 @@ export const FAILURE_CAPTURES = new Set<string>([
   'target.id',
 ]);
 export interface GuardSubject {
-  member: GuildMember;
+  member: GuildMember | PartialGuildMember;
   isSelf: boolean;
 }
 

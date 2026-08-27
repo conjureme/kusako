@@ -1,8 +1,15 @@
-import { Events, type Guild, type GuildMember } from 'discord.js';
+import {
+  Events,
+  type Guild,
+  type GuildMember,
+  type PartialGuildMember,
+} from 'discord.js';
 
 import type { SakoClient } from '../../client.js';
 
-export type FireEvent = (guild: Guild, member: GuildMember) => Promise<unknown>;
+export type EventMember = GuildMember | PartialGuildMember;
+
+export type FireEvent = (guild: Guild, member: EventMember) => Promise<unknown>;
 
 export interface EventDefinition {
   id: string;
@@ -28,7 +35,7 @@ export const EVENTS = [
     blurb: 'what sako says when someone leaves !',
     register(client: SakoClient, fire: FireEvent) {
       client.on(Events.GuildMemberRemove, async (member) => {
-        await fire(member.guild, member as GuildMember);
+        await fire(member.guild, member);
       });
     },
   },
@@ -38,6 +45,7 @@ export const EVENTS = [
     blurb: 'what sako says when someone boosts !',
     register(client: SakoClient, fire: FireEvent) {
       client.on(Events.GuildMemberUpdate, async (oldMember, newMember) => {
+        if (oldMember.partial) return;
         if (oldMember.premiumSince || !newMember.premiumSince) return;
         await fire(newMember.guild, newMember);
       });

@@ -1,7 +1,7 @@
-import { type Guild, type GuildMember } from 'discord.js';
+import { type Guild } from 'discord.js';
 
 import { getEventReply } from './store.js';
-import { type EventKind } from './registry.js';
+import { type EventKind, type EventMember } from './registry.js';
 import { eventScope } from '../cooldowns.js';
 import { parse } from '../../dsl/parser.js';
 import { evaluate } from '../../dsl/evaluate.js';
@@ -15,7 +15,7 @@ export type FireOutcome =
 
 export async function fireEvent(
   guild: Guild,
-  member: GuildMember,
+  member: EventMember,
   kind: EventKind,
 ): Promise<FireOutcome> {
   const reply = getEventReply(guild.id, kind);

@@ -3,6 +3,7 @@ import type {
   GuildMember,
   GuildTextBasedChannel,
   Message,
+  PartialGuildMember,
 } from 'discord.js';
 
 export class PendingEffects {
@@ -33,7 +34,7 @@ export class PendingEffects {
 }
 
 export interface RenderContext {
-  member?: GuildMember;
+  member?: GuildMember | PartialGuildMember;
   guild: Guild;
   channel: GuildTextBasedChannel;
   message?: Message;

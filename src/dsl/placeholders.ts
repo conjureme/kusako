@@ -1,4 +1,8 @@
-import type { GuildMember, GuildBasedChannel } from 'discord.js';
+import type {
+  GuildMember,
+  PartialGuildMember,
+  GuildBasedChannel,
+} from 'discord.js';
 
 import { getBalance, getCurrency } from '../services/economy/guild.js';
 import { getItem, getQuantity, getInventory } from '../services/items/store.js';
@@ -49,7 +53,7 @@ const INVENTORY_LINES = 15;
 async function memberOf(
   ctx: RenderContext,
   target: string | undefined,
-): Promise<GuildMember> {
+): Promise<GuildMember | PartialGuildMember> {
   const raw = (target ?? '').trim();
   if (raw.length === 0) {
     if (!ctx.member) throw new Error('no subject');

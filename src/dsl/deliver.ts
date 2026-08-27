@@ -4,6 +4,7 @@ import {
   ButtonStyle,
   MessageFlags,
   type GuildMember,
+  type PartialGuildMember,
   type GuildTextBasedChannel,
   type Message,
   type RepliableInteraction,
@@ -123,7 +124,7 @@ async function sendEphemeral(
 }
 
 export interface DeliveryTarget {
-  member?: GuildMember;
+  member?: GuildMember | PartialGuildMember;
   channel: GuildTextBasedChannel;
   triggerMessage?: Message;
   interaction?: RepliableInteraction;
