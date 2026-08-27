@@ -1,6 +1,18 @@
-import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import {
+  SlashCommandBuilder,
+  PermissionFlagsBits,
+  ChannelType,
+  MessageFlags,
+} from 'discord.js';
 
 import type { SlashCommand } from '../client.js';
+import { setGuildSetting } from '../services/guildSettings.js';
+import {
+  getTicketCategories,
+  TICKET_CATEGORY_KEY,
+  TICKET_ARCHIVE_KEY,
+} from '../services/tickets/store.js';
+import { missingTicketPerms } from '../services/tickets/fire.js';
 import { getCurrency, setCurrency } from '../services/economy/guild.js';
 import {
   getPatSettings,
@@ -112,6 +124,25 @@ export const settings: SlashCommand = {
                 .setName('enabled')
                 .setDescription('should members earn xp in this server?')
                 .setRequired(true),
+            ),
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName('tickets')
+            .setDescription('where ticket channels live')
+            .addChannelOption((o) =>
+              o
+                .setName('category')
+                .setDescription('where new tickets open')
+                .addChannelTypes(ChannelType.GuildCategory)
+                .setRequired(false),
+            )
+            .addChannelOption((o) =>
+              o
+                .setName('archive')
+                .setDescription('where closed tickets move to')
+                .addChannelTypes(ChannelType.GuildCategory)
+                .setRequired(false),
             ),
         )
         .addSubcommand((sub) =>
@@ -239,6 +270,62 @@ export const settings: SlashCommand = {
         .setDescription(
           `scheduled posts follow **${zone}** now; it's ${formatWallTime(now.hour * 60 + now.minute)} there`,
         );
+
+      await interaction.reply({ embeds: [embed] });
+      return;
+    }
+
+    if (group === 'set' && sub === 'tickets') {
+      const live = interaction.options.getChannel('category');
+      const archive = interaction.options.getChannel('archive');
+
+      if (!live && !archive) {
+        await interaction.reply({
+          content:
+            'pick at least one ! **category** is where tickets open, **archive** is where closed ones go',
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+
+      if (live) setGuildSetting(guildId, TICKET_CATEGORY_KEY, live.id);
+      if (archive) setGuildSetting(guildId, TICKET_ARCHIVE_KEY, archive.id);
+
+      const now = getTicketCategories(guildId);
+      const lines = [
+        now.live
+          ? `new tickets open in <#${now.live}>`
+          : 'no category for new tickets yet, so they land at the top of the server',
+        now.archive
+          ? `closed ones move to <#${now.archive}>`
+          : 'no archive category yet, so closed tickets stay where they are',
+      ];
+
+      const me = interaction.guild.members.me;
+      const missing = missingTicketPerms(interaction.guild);
+      const unreachable = [live, archive]
+        .filter((c) => c !== null)
+        .filter(
+          (c) =>
+            me?.permissionsIn(c.id).has(PermissionFlagsBits.ManageChannels) !==
+            true,
+        )
+        .map((c) => `<#${c.id}>`);
+
+      if (missing.length > 0) {
+        lines.push(
+          `-# ✧ i'm missing **${missing.join('** and **')}** ! i can't make ticket channels at all until someone gives me that`,
+        );
+      }
+      if (unreachable.length > 0) {
+        lines.push(
+          `-# ✧ i can't manage channels inside ${unreachable.join(' or ')},, check my permissions there`,
+        );
+      }
+
+      const embed = serverEmbed(interaction.guild)
+        .setTitle('✦ ticket categories updated !')
+        .setDescription(lines.join('\n'));
 
       await interaction.reply({ embeds: [embed] });
       return;

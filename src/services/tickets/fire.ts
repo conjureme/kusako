@@ -48,6 +48,20 @@ const TICKET_ALLOW = [
   PermissionFlagsBits.AddReactions,
 ] as const;
 
+const REQUIRED_PERMS: Array<[bigint, string]> = [
+  [PermissionFlagsBits.ManageChannels, 'manage channels'],
+  [PermissionFlagsBits.ManageRoles, 'manage roles'],
+];
+
+export function missingTicketPerms(guild: Guild): string[] {
+  const me = guild.members.me;
+  if (!me) return [];
+
+  return REQUIRED_PERMS.filter(([flag]) => !me.permissions.has(flag)).map(
+    ([, label]) => label,
+  );
+}
+
 export function grantableAllows(guild: Guild): bigint[] {
   const me = guild.members.me;
   if (!me) return [];
