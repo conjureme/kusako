@@ -8,6 +8,8 @@ import {
   type SlashCommandBuilder,
 } from 'discord.js';
 
+import { invalidateFreshness } from './services/memberCache.js';
+
 export interface SlashCommand {
   data: SlashCommandBuilder;
   execute(interaction: ChatInputCommandInteraction): Promise<void>;
@@ -31,7 +33,14 @@ export function createClient(): SakoClient {
     sweepers: {
       guildMembers: {
         interval: 600,
-        filter: () => (member) => member.id !== member.client.user.id,
+        filter: () => {
+          invalidateFreshness();
+          return (member) => member.id !== member.client.user.id;
+        },
+      },
+      users: {
+        interval: 600,
+        filter: () => (user) => user.id !== user.client.user.id,
       },
     },
   }) as SakoClient;

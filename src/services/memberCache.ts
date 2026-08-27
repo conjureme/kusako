@@ -6,6 +6,10 @@ const FRESH_MS = 5 * 60_000;
 // persisting it would let a restart claim "fresh" over an empty cache
 const fetchedAt = new Map<string, number>();
 
+export function invalidateFreshness(): void {
+  fetchedAt.clear();
+}
+
 export async function fetchMembers(guild: Guild, force = false): Promise<void> {
   if (guild.members.cache.size >= guild.memberCount) return;
 
