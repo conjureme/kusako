@@ -114,7 +114,7 @@ export function templateTraits(response: string): {
   }
 
   const buttons = nodes.filter(
-    (node) => node.name === 'addbutton' || node.name === 'addlinkbutton',
+    (node) => node.name === 'button' || node.name === 'linkbutton',
   ).length;
   if (buttons > 0) does.push(`${buttons} button${buttons === 1 ? '' : 's'}`);
 

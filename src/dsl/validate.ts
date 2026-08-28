@@ -381,18 +381,18 @@ export function validateTemplate(nodes: Node[]): string[] {
       continue;
     }
 
-    if (node.name === 'addbutton') {
+    if (node.name === 'button') {
       buttons += 1;
       if (buttons === MAX_BUTTONS + 1) {
         errors.push(`max ${MAX_BUTTONS} buttons per reply !`);
       }
       if ((node.args[0] ?? '').trim().length === 0) {
-        errors.push('{addbutton} needs a name, like {addbutton:verify}');
+        errors.push('{button} needs a name, like {button:verify}');
       }
       continue;
     }
 
-    if (node.name === 'adddropdown') {
+    if (node.name === 'dropdown') {
       dropdowns += 1;
       const options = node.args
         .slice(1)
@@ -401,7 +401,7 @@ export function validateTemplate(nodes: Node[]): string[] {
 
       if (options.length === 0) {
         errors.push(
-          '{adddropdown} needs a placeholder then at least one button responder, like {adddropdown: pick a role | pink | blue}',
+          '{dropdown} needs a placeholder then at least one button responder, like {dropdown: pick a role | pink | blue}',
         );
       }
       if (options.length > MAX_DROPDOWN_OPTIONS) {
@@ -410,18 +410,18 @@ export function validateTemplate(nodes: Node[]): string[] {
       continue;
     }
 
-    if (node.name === 'addlinkbutton') {
+    if (node.name === 'linkbutton') {
       buttons += 1;
       if (buttons === MAX_BUTTONS + 1) {
         errors.push(`max ${MAX_BUTTONS} buttons per reply !`);
       }
       if ((node.args[0] ?? '').trim().length === 0) {
         errors.push(
-          '{addlinkbutton} needs a label and a url, like {addlinkbutton:our site | https://frie.rent}',
+          '{linkbutton} needs a label and a url, like {linkbutton:our site | https://frie.rent}',
         );
       } else if (!URLISH.test((node.args[1] ?? '').trim())) {
         errors.push(
-          '{addlinkbutton} needs a real url (http/https), like {addlinkbutton:our site | https://frie.rent}',
+          '{linkbutton} needs a real url (http/https), like {linkbutton:our site | https://frie.rent}',
         );
       }
       continue;

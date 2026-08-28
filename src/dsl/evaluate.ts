@@ -505,7 +505,7 @@ export async function evaluate(
       continue;
     }
 
-    if (node.name === 'addbutton') {
+    if (node.name === 'button') {
       const name = (args[0] ?? '').trim();
       if (name.length === 0 || actions.buttons.length >= MAX_BUTTONS) {
         current += node.raw;
@@ -515,7 +515,7 @@ export async function evaluate(
       continue;
     }
 
-    if (node.name === 'adddropdown') {
+    if (node.name === 'dropdown') {
       const options = args
         .slice(1)
         .map((option) => option.trim())
@@ -537,7 +537,7 @@ export async function evaluate(
       continue;
     }
 
-    if (node.name === 'addlinkbutton') {
+    if (node.name === 'linkbutton') {
       const label = (args[0] ?? '').trim();
       const url = (args[1] ?? '').trim();
       if (

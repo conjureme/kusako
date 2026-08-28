@@ -217,7 +217,7 @@ function buttonDetailEmbed(
     fields: lookFields(name, look),
     notes: [
       ...extra,
-      `attach it to a reply with ${inlineCode(`{addbutton:${name}}`)} !`,
+      `attach it to a reply with ${inlineCode(`{button:${name}}`)} !`,
     ],
   });
 }
@@ -235,14 +235,14 @@ function brPage(guild: Guild, _userId: string, page: number) {
     const embed = serverEmbed(guild)
       .setTitle('✦ button responders (0)')
       .setDescription(
-        `none here yet... make one with ${commandMention('/buttonresponders add')}, then drop ${inlineCode('{addbutton:name}')} in any reply !!`,
+        `none here yet... make one with ${commandMention('/buttonresponders add')}, then drop ${inlineCode('{button:name}')} in any reply !!`,
       );
 
     return { embeds: [embed], components: [] };
   }
 
   const header = `꒰ button responders ꒱ *${all.length} of them !*`;
-  const hint = `⁀જ➣ attach one with ${inlineCode('{addbutton:name}')} in any reply`;
+  const hint = `⁀જ➣ attach one with ${inlineCode('{button:name}')} in any reply`;
 
   const blocks = all.map(({ name, response }) => {
     const { badges } = templateTraits(response);
