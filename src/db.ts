@@ -119,6 +119,20 @@ CREATE TABLE IF NOT EXISTS scheduled_templates (
 CREATE INDEX IF NOT EXISTS idx_scheduled_templates_due
   ON scheduled_templates (state, next_run);
 
+CREATE TABLE IF NOT EXISTS role_menus (
+  guild_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  name_key TEXT NOT NULL,
+  placeholder TEXT,
+  style TEXT NOT NULL DEFAULT 'dropdown',
+  mode TEXT NOT NULL DEFAULT 'multi',
+  color TEXT,
+  roles TEXT NOT NULL DEFAULT '[]',
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (guild_id, name_key)
+);
+
 CREATE TABLE IF NOT EXISTS ticket_types (
   guild_id TEXT NOT NULL,
   key TEXT NOT NULL,
