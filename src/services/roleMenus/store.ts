@@ -101,8 +101,47 @@ export function isMenuMode(value: string): value is MenuMode {
   return (MENU_MODES as readonly string[]).includes(value);
 }
 
+export const MAX_MENU_NAME = 32;
+
 export function roleMenuKey(name: string): string {
   return name.trim().toLowerCase();
+}
+
+const MENU_PREFIX = 'rm:';
+const MENU_BUTTON_PREFIX = 'rmb:';
+
+export function roleMenuCustomId(nameKey: string): string {
+  return `${MENU_PREFIX}${nameKey}`;
+}
+
+export function roleMenuButtonId(nameKey: string, roleId: string): string {
+  return `${MENU_BUTTON_PREFIX}${nameKey}:${roleId}`;
+}
+
+export function parseRoleMenuId(
+  customId: string,
+): { nameKey: string; roleId: string | null } | null {
+  if (customId.startsWith(MENU_BUTTON_PREFIX)) {
+    const rest = customId.slice(MENU_BUTTON_PREFIX.length);
+    const split = rest.lastIndexOf(':');
+    if (split < 1) return null;
+
+    const roleId = rest.slice(split + 1);
+    return roleId.length > 0 ? { nameKey: rest.slice(0, split), roleId } : null;
+  }
+
+  if (customId.startsWith(MENU_PREFIX)) {
+    const nameKey = customId.slice(MENU_PREFIX.length);
+    return nameKey.length > 0 ? { nameKey, roleId: null } : null;
+  }
+
+  return null;
+}
+
+export function isRoleMenuCustomId(customId: string): boolean {
+  return (
+    customId.startsWith(MENU_PREFIX) || customId.startsWith(MENU_BUTTON_PREFIX)
+  );
 }
 
 export function dedupeEntries(entries: RoleMenuEntry[]): RoleMenuEntry[] {

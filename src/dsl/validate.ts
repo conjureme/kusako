@@ -217,6 +217,7 @@ export function validateTemplate(nodes: Node[]): string[] {
   let roleTags = 0;
   let buttons = 0;
   let dropdowns = 0;
+  let roleMenus = 0;
   let errorTags = 0;
   let ephemerals = 0;
 
@@ -388,6 +389,19 @@ export function validateTemplate(nodes: Node[]): string[] {
       }
       if ((node.args[0] ?? '').trim().length === 0) {
         errors.push('{button} needs a name, like {button:verify}');
+      }
+      continue;
+    }
+
+    if (node.name === 'rolemenu') {
+      roleMenus += 1;
+      if (roleMenus === 2) {
+        errors.push(
+          'only one {rolemenu} per reply! put the second one in its own message',
+        );
+      }
+      if ((node.args[0] ?? '').trim().length === 0) {
+        errors.push('{rolemenu} needs a name, like {rolemenu:regions}');
       }
       continue;
     }
@@ -670,8 +684,11 @@ export function validateTemplate(nodes: Node[]): string[] {
     }
   }
 
-  if (dropdowns > 0) {
-    const rows = rowsUsed(Math.min(buttons, MAX_BUTTONS), dropdowns);
+  if (dropdowns > 0 || roleMenus > 0) {
+    const rows = rowsUsed(
+      Math.min(buttons, MAX_BUTTONS),
+      dropdowns + roleMenus,
+    );
     if (rows > MAX_ROWS) {
       errors.push(
         `that's ${rows} rows of components and discord only allows ${MAX_ROWS} ! every dropdown takes a whole row, and buttons sit ${BUTTONS_PER_ROW} to a row`,

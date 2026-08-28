@@ -8,6 +8,7 @@ import {
   type MessageActionRowComponentBuilder,
   type GuildMember,
   type PartialGuildMember,
+  type Guild,
   type GuildTextBasedChannel,
   type Message,
   type RepliableInteraction,
@@ -27,6 +28,12 @@ import {
   isUsableEmoji,
   resolveButtonStyle,
 } from '../services/buttons/registry.js';
+import {
+  getRoleMenu,
+  roleMenuCustomId,
+  roleMenuButtonId,
+  type RoleMenu,
+} from '../services/roleMenus/store.js';
 import { logger } from '../logger.js';
 import {
   BUTTONS_PER_ROW,
@@ -100,13 +107,83 @@ function dropdownRow(
   );
 }
 
+function roleMenuRows(
+  guildId: string,
+  guild: Guild,
+  name: string,
+): ActionRowBuilder<MessageActionRowComponentBuilder>[] {
+  const menu: RoleMenu | null = getRoleMenu(guildId, name);
+  if (!menu) return [];
+
+  const live = menu.roles.filter((entry) =>
+    guild.roles.cache.has(entry.roleId),
+  );
+  if (live.length === 0) return [];
+
+  const labelOf = (roleId: string, label: string | null): string =>
+    (label?.trim() || guild.roles.cache.get(roleId)?.name || roleId).slice(
+      0,
+      80,
+    );
+
+  if (menu.style === 'dropdown') {
+    const select = new StringSelectMenuBuilder()
+      .setCustomId(roleMenuCustomId(menu.nameKey))
+      .addOptions(
+        live.map((entry) => {
+          const option = new StringSelectMenuOptionBuilder()
+            .setValue(entry.roleId)
+            .setLabel(labelOf(entry.roleId, entry.label));
+          if (entry.emoji && isUsableEmoji(entry.emoji)) {
+            option.setEmoji(entry.emoji);
+          }
+          return option;
+        }),
+      );
+
+    if (menu.placeholder) select.setPlaceholder(menu.placeholder.slice(0, 150));
+
+    return [
+      new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
+        select,
+      ),
+    ];
+  }
+
+  const rows: ActionRowBuilder<MessageActionRowComponentBuilder>[] = [];
+  for (let i = 0; i < live.length; i += BUTTONS_PER_ROW) {
+    const row = new ActionRowBuilder<MessageActionRowComponentBuilder>();
+    for (const entry of live.slice(i, i + BUTTONS_PER_ROW)) {
+      const button = new ButtonBuilder()
+        .setCustomId(roleMenuButtonId(menu.nameKey, entry.roleId))
+        .setStyle(resolveButtonStyle(menu.color));
+
+      const hasEmoji = Boolean(entry.emoji && isUsableEmoji(entry.emoji));
+      if (hasEmoji) button.setEmoji(entry.emoji!);
+      if (entry.label?.trim() || !hasEmoji) {
+        button.setLabel(labelOf(entry.roleId, entry.label));
+      }
+
+      row.addComponents(button);
+    }
+    rows.push(row);
+  }
+
+  return rows;
+}
+
 function buildComponentRows(
   actions: MessageActions,
   guildId: string,
+  guild: Guild,
   invokerId: string | undefined,
 ): ActionRowBuilder<MessageActionRowComponentBuilder>[] {
   const rows: ActionRowBuilder<MessageActionRowComponentBuilder>[] = [];
   const { buttons } = actions;
+
+  if (actions.roleMenu !== null) {
+    rows.push(...roleMenuRows(guildId, guild, actions.roleMenu));
+  }
 
   for (let i = 0; i < buttons.length; i += BUTTONS_PER_ROW) {
     const row = new ActionRowBuilder<MessageActionRowComponentBuilder>();
@@ -201,8 +278,15 @@ export async function deliver(
 
   let firstSent: Message | null = null;
   const buttonRows =
-    actions.buttons.length > 0 || actions.dropdowns.length > 0
-      ? buildComponentRows(actions, target.channel.guild.id, target.member?.id)
+    actions.buttons.length > 0 ||
+    actions.dropdowns.length > 0 ||
+    actions.roleMenu !== null
+      ? buildComponentRows(
+          actions,
+          target.channel.guild.id,
+          target.channel.guild,
+          target.member?.id,
+        )
       : [];
   let buttonsAttached = false;
 

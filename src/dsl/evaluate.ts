@@ -73,6 +73,7 @@ export interface MessageActions {
     | { kind: 'link'; label: string; url: string }
   >;
   dropdowns: Array<{ placeholder: string; options: string[] }>;
+  roleMenu: string | null;
 }
 
 export type EvalResult =
@@ -222,6 +223,7 @@ export async function evaluate(
     ),
     buttons: [],
     dropdowns: [],
+    roleMenu: null,
   };
 
   const silent = nodes.some(
@@ -512,6 +514,16 @@ export async function evaluate(
         continue;
       }
       actions.buttons.push({ kind: 'responder', name });
+      continue;
+    }
+
+    if (node.name === 'rolemenu') {
+      const name = (args[0] ?? '').trim();
+      if (name.length === 0 || actions.roleMenu !== null) {
+        current += node.raw;
+        continue;
+      }
+      actions.roleMenu = name;
       continue;
     }
 
