@@ -4,7 +4,11 @@ import type { SakoClient } from '../client.js';
 import { handleEmbedComponents } from '../commands/embeds.js';
 import { handleItemComponents } from '../commands/items.js';
 import { handleButtonResponderComponents } from '../commands/buttonresponders.js';
-import { isButtonCustomId } from '../services/buttons/store.js';
+import {
+  isButtonCustomId,
+  isDropdownCustomId,
+} from '../services/buttons/store.js';
+import { fireDropdownSelection } from '../services/buttons/fire.js';
 import {
   isTicketCustomId,
   TICKET_CLOSE_ID,
@@ -53,6 +57,18 @@ export function registerInteractionCreate(client: SakoClient): void {
           { err, id: interaction.customId },
           'button responder failed',
         );
+      }
+      return;
+    }
+
+    if (
+      interaction.isStringSelectMenu() &&
+      isDropdownCustomId(interaction.customId)
+    ) {
+      try {
+        await fireDropdownSelection(interaction);
+      } catch (err) {
+        logger.error({ err, id: interaction.customId }, 'dropdown failed');
       }
       return;
     }
