@@ -2,7 +2,10 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
   MessageFlags,
+  type MessageActionRowComponentBuilder,
   type GuildMember,
   type PartialGuildMember,
   type GuildTextBasedChannel,
@@ -17,6 +20,7 @@ import {
 } from '../services/scheduler.js';
 import {
   buttonCustomId,
+  dropdownCustomId,
   getButtonResponder,
 } from '../services/buttons/store.js';
 import {
@@ -24,7 +28,12 @@ import {
   resolveButtonStyle,
 } from '../services/buttons/registry.js';
 import { logger } from '../logger.js';
-import type { Segment, MessageActions } from './evaluate.js';
+import {
+  BUTTONS_PER_ROW,
+  MAX_ROWS,
+  type Segment,
+  type MessageActions,
+} from './evaluate.js';
 
 function responderButton(
   guildId: string,
@@ -56,15 +65,52 @@ function responderButton(
   return button;
 }
 
-function buildButtonRows(
-  buttons: MessageActions['buttons'],
+function dropdownRow(
+  dropdown: MessageActions['dropdowns'][number],
+  index: number,
   guildId: string,
   invokerId: string | undefined,
-): ActionRowBuilder<ButtonBuilder>[] {
-  const rows: ActionRowBuilder<ButtonBuilder>[] = [];
-  for (let i = 0; i < buttons.length; i += 5) {
-    const row = new ActionRowBuilder<ButtonBuilder>();
-    for (const button of buttons.slice(i, i + 5)) {
+): ActionRowBuilder<MessageActionRowComponentBuilder> | null {
+  const options = dropdown.options.map((name) => {
+    const responder = getButtonResponder(guildId, name);
+    const option = new StringSelectMenuOptionBuilder()
+      .setValue(name.toLowerCase().slice(0, 100))
+      .setLabel((responder?.label?.trim() || name).slice(0, 100));
+
+    const emoji = responder?.emoji;
+    if (emoji && isUsableEmoji(emoji)) option.setEmoji(emoji);
+    return option;
+  });
+
+  if (options.length === 0) return null;
+
+  const locked = dropdown.options.some(
+    (name) => getButtonResponder(guildId, name)?.invokerOnly === true,
+  );
+  const select = new StringSelectMenuBuilder()
+    .setCustomId(dropdownCustomId(index, locked ? invokerId : undefined))
+    .addOptions(options);
+
+  if (dropdown.placeholder.length > 0) {
+    select.setPlaceholder(dropdown.placeholder.slice(0, 150));
+  }
+
+  return new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
+    select,
+  );
+}
+
+function buildComponentRows(
+  actions: MessageActions,
+  guildId: string,
+  invokerId: string | undefined,
+): ActionRowBuilder<MessageActionRowComponentBuilder>[] {
+  const rows: ActionRowBuilder<MessageActionRowComponentBuilder>[] = [];
+  const { buttons } = actions;
+
+  for (let i = 0; i < buttons.length; i += BUTTONS_PER_ROW) {
+    const row = new ActionRowBuilder<MessageActionRowComponentBuilder>();
+    for (const button of buttons.slice(i, i + BUTTONS_PER_ROW)) {
       row.addComponents(
         button.kind === 'link'
           ? new ButtonBuilder()
@@ -76,12 +122,18 @@ function buildButtonRows(
     }
     rows.push(row);
   }
-  return rows;
+
+  actions.dropdowns.forEach((dropdown, index) => {
+    const row = dropdownRow(dropdown, index, guildId, invokerId);
+    if (row) rows.push(row);
+  });
+
+  return rows.slice(0, MAX_ROWS);
 }
 
 async function sendEphemeral(
   segments: Segment[],
-  buttonRows: ActionRowBuilder<ButtonBuilder>[],
+  buttonRows: ActionRowBuilder<MessageActionRowComponentBuilder>[],
   interaction: RepliableInteraction,
 ): Promise<void> {
   const content = segments
@@ -149,12 +201,8 @@ export async function deliver(
 
   let firstSent: Message | null = null;
   const buttonRows =
-    actions.buttons.length > 0
-      ? buildButtonRows(
-          actions.buttons,
-          target.channel.guild.id,
-          target.member?.id,
-        )
+    actions.buttons.length > 0 || actions.dropdowns.length > 0
+      ? buildComponentRows(actions, target.channel.guild.id, target.member?.id)
       : [];
   let buttonsAttached = false;
 

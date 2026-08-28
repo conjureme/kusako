@@ -87,6 +87,35 @@ export function isButtonCustomId(customId: string): boolean {
   );
 }
 
+const DROPDOWN_PREFIX = 'dd:';
+const DROPDOWN_LOCKED_PREFIX = 'ddi:';
+
+export function dropdownCustomId(index: number, invokerId?: string): string {
+  return invokerId
+    ? `${DROPDOWN_LOCKED_PREFIX}${invokerId}:${index}`
+    : `${DROPDOWN_PREFIX}${index}`;
+}
+
+export function parseDropdownCustomId(
+  customId: string,
+): { invokerId: string | null } | null {
+  if (customId.startsWith(DROPDOWN_LOCKED_PREFIX)) {
+    const rest = customId.slice(DROPDOWN_LOCKED_PREFIX.length);
+    const split = rest.indexOf(':');
+    if (split < 1) return null;
+    return { invokerId: rest.slice(0, split) };
+  }
+
+  return customId.startsWith(DROPDOWN_PREFIX) ? { invokerId: null } : null;
+}
+
+export function isDropdownCustomId(customId: string): boolean {
+  return (
+    customId.startsWith(DROPDOWN_PREFIX) ||
+    customId.startsWith(DROPDOWN_LOCKED_PREFIX)
+  );
+}
+
 export function getButtonResponder(
   guildId: string,
   name: string,

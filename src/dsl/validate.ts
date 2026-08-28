@@ -12,7 +12,13 @@ import {
 } from './guards.js';
 import { MAX_LEVEL } from '../services/levels/store.js';
 import { placeholders, targetArgIndex } from './placeholders.js';
-import { MAX_BUTTONS } from './evaluate.js';
+import {
+  MAX_BUTTONS,
+  MAX_ROWS,
+  BUTTONS_PER_ROW,
+  MAX_DROPDOWN_OPTIONS,
+  rowsUsed,
+} from './evaluate.js';
 import { URLISH } from '../services/embeds/store.js';
 
 const MAX_SEGMENTS = 3;
@@ -210,6 +216,7 @@ export function validateTemplate(nodes: Node[]): string[] {
   let embedTags = 0;
   let roleTags = 0;
   let buttons = 0;
+  let dropdowns = 0;
   let errorTags = 0;
   let ephemerals = 0;
 
@@ -381,6 +388,24 @@ export function validateTemplate(nodes: Node[]): string[] {
       }
       if ((node.args[0] ?? '').trim().length === 0) {
         errors.push('{addbutton} needs a name, like {addbutton:verify}');
+      }
+      continue;
+    }
+
+    if (node.name === 'adddropdown') {
+      dropdowns += 1;
+      const options = node.args
+        .slice(1)
+        .map((option) => option.trim())
+        .filter((option) => option.length > 0);
+
+      if (options.length === 0) {
+        errors.push(
+          '{adddropdown} needs a placeholder then at least one button responder, like {adddropdown: pick a role | pink | blue}',
+        );
+      }
+      if (options.length > MAX_DROPDOWN_OPTIONS) {
+        errors.push(`max ${MAX_DROPDOWN_OPTIONS} options per dropdown !`);
       }
       continue;
     }
@@ -642,6 +667,15 @@ export function validateTemplate(nodes: Node[]): string[] {
       if (has(tag)) {
         errors.push(`{ephemeral} and {${tag}} can't go together ! ${why}`);
       }
+    }
+  }
+
+  if (dropdowns > 0) {
+    const rows = rowsUsed(Math.min(buttons, MAX_BUTTONS), dropdowns);
+    if (rows > MAX_ROWS) {
+      errors.push(
+        `that's ${rows} rows of components and discord only allows ${MAX_ROWS} ! every dropdown takes a whole row, and buttons sit ${BUTTONS_PER_ROW} to a row`,
+      );
     }
   }
 

@@ -38,7 +38,14 @@ import {
   formatDuration,
 } from './args.js';
 
-export const MAX_BUTTONS = 25;
+export const MAX_ROWS = 5;
+export const BUTTONS_PER_ROW = 5;
+export const MAX_BUTTONS = MAX_ROWS * BUTTONS_PER_ROW;
+export const MAX_DROPDOWN_OPTIONS = 25;
+
+export function rowsUsed(buttons: number, dropdowns: number): number {
+  return Math.ceil(buttons / BUTTONS_PER_ROW) + dropdowns;
+}
 
 export interface Segment {
   content: string;
@@ -65,6 +72,7 @@ export interface MessageActions {
     | { kind: 'responder'; name: string }
     | { kind: 'link'; label: string; url: string }
   >;
+  dropdowns: Array<{ placeholder: string; options: string[] }>;
 }
 
 export type EvalResult =
@@ -213,6 +221,7 @@ export async function evaluate(
       (node) => node.kind === 'placeholder' && node.name === 'ephemeral',
     ),
     buttons: [],
+    dropdowns: [],
   };
 
   const silent = nodes.some(
@@ -503,6 +512,28 @@ export async function evaluate(
         continue;
       }
       actions.buttons.push({ kind: 'responder', name });
+      continue;
+    }
+
+    if (node.name === 'adddropdown') {
+      const options = args
+        .slice(1)
+        .map((option) => option.trim())
+        .filter((option) => option.length > 0)
+        .slice(0, MAX_DROPDOWN_OPTIONS);
+
+      if (
+        options.length === 0 ||
+        rowsUsed(actions.buttons.length, actions.dropdowns.length) >= MAX_ROWS
+      ) {
+        current += node.raw;
+        continue;
+      }
+
+      actions.dropdowns.push({
+        placeholder: (args[0] ?? '').trim().slice(0, 150),
+        options,
+      });
       continue;
     }
 
