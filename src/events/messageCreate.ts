@@ -24,6 +24,7 @@ import {
 import { autoresponderScope } from '../services/cooldowns.js';
 import { fireLevelUps } from '../services/levels/fire.js';
 import { handleOwnerCommand } from '../commands/owner.js';
+import { handleRoleMenuInput } from '../services/roleMenus/input.js';
 import { failureEmbed } from '../utils/style.js';
 import { logger } from '../logger.js';
 
@@ -33,6 +34,7 @@ export function registerMessageCreate(client: SakoClient): void {
     if (await handleOwnerCommand(message)) return;
     if (!message.inGuild()) return;
     if (!message.member) return;
+    if (await handleRoleMenuInput(message)) return;
 
     if (
       isLevelingEnabled(message.guildId) &&

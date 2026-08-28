@@ -431,7 +431,7 @@ export async function evaluate(
       node.name === 'temprole'
     ) {
       const temp = node.name === 'temprole';
-      const role = resolveRoleArg(ctx, args[0] ?? '');
+      const role = resolveRoleArg(ctx.guild, args[0] ?? '');
       // temprole's duration sits in arg 1, so its target shifts to arg 2
       const targetRaw = (args[temp ? 2 : 1] ?? '').trim();
       const targetId =
@@ -460,7 +460,7 @@ export async function evaluate(
     }
 
     if (node.name === 'togglerole') {
-      const role = resolveRoleArg(ctx, args[0] ?? '');
+      const role = resolveRoleArg(ctx.guild, args[0] ?? '');
       if (!role || !ctx.member) {
         current += node.raw;
         continue;

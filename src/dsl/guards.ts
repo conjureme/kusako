@@ -1,5 +1,6 @@
 import {
   PermissionFlagsBits,
+  type Guild,
   type GuildMember,
   type PartialGuildMember,
   type PermissionsString,
@@ -84,14 +85,14 @@ export function resolveChannelArg(ctx: RenderContext, raw: string) {
   );
 }
 
-export function resolveRoleArg(ctx: RenderContext, raw: string) {
+export function resolveRoleArg(guild: Guild, raw: string) {
   const target = targetOf(raw.trim(), ROLE_MENTION, '@');
   if (target.length === 0) return null;
 
   const lower = target.toLowerCase();
   return (
-    (/^\d+$/.test(target) ? ctx.guild.roles.cache.get(target) : null) ??
-    ctx.guild.roles.cache.find((r) => r.name.toLowerCase() === lower) ??
+    (/^\d+$/.test(target) ? guild.roles.cache.get(target) : null) ??
+    guild.roles.cache.find((r) => r.name.toLowerCase() === lower) ??
     null
   );
 }
@@ -151,7 +152,7 @@ export const ARG_TYPES = new Map<
   [
     'role',
     {
-      ok: (ctx, word) => resolveRoleArg(ctx, word) !== null,
+      ok: (ctx, word) => resolveRoleArg(ctx.guild, word) !== null,
       describe: 'a role',
     },
   ],
@@ -310,7 +311,7 @@ export const guards = new Map<string, Guard>([
         };
       }
 
-      const role = resolveRoleArg(ctx, raw);
+      const role = resolveRoleArg(ctx.guild, raw);
       if (!role) {
         return {
           ok: false,
@@ -331,7 +332,7 @@ export const guards = new Map<string, Guard>([
   [
     'denyrole',
     (_meta, args, ctx, subject) => {
-      const role = resolveRoleArg(ctx, args[0] ?? '');
+      const role = resolveRoleArg(ctx.guild, args[0] ?? '');
       if (role && subject.member.roles.cache.has(role.id)) {
         return {
           ok: false,
