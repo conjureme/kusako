@@ -134,8 +134,8 @@ const NO_SUBJECT = new Map<string, string>([
 const SUBJECT_ARGS = new Map<string, number>([
   ['modifybal', 1],
   ['modifyinv', 2],
-  ['giverole', 1],
-  ['takerole', 1],
+  ['addrole', 1],
+  ['removerole', 1],
   ['temprole', 2],
   ['setnick', 1],
 ]);
@@ -566,15 +566,15 @@ export function validateTemplate(nodes: Node[]): string[] {
     }
 
     if (
-      node.name === 'giverole' ||
-      node.name === 'takerole' ||
+      node.name === 'addrole' ||
+      node.name === 'removerole' ||
       node.name === 'temprole' ||
       node.name === 'togglerole'
     ) {
       roleTags += 1;
       if (roleTags === MAX_ROLE_TAGS + 1) {
         errors.push(
-          `max ${MAX_ROLE_TAGS} {giverole}/{takerole}/{temprole}/{togglerole} tags per autoresponder !`,
+          `max ${MAX_ROLE_TAGS} {addrole}/{removerole}/{temprole}/{togglerole} tags per autoresponder !`,
         );
       }
       if ((node.args[0] ?? '').trim().length === 0) {

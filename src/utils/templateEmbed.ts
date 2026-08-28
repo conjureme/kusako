@@ -67,10 +67,10 @@ export function templateTraits(response: string): {
     badges.push('items');
     does.push('moves items');
   }
-  if (has('giverole') || has('takerole') || has('togglerole')) {
+  if (has('addrole') || has('removerole') || has('togglerole')) {
     badges.push('roles');
   }
-  if (has('giverole') || has('takerole')) {
+  if (has('addrole') || has('removerole')) {
     does.push('gives or takes roles');
   }
   if (has('togglerole')) {

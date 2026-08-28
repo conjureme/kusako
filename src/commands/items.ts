@@ -59,7 +59,7 @@ function rolesOnUse(useReply: string | null): string {
   const roles = parse(useReply)
     .filter(
       (node): node is PlaceholderNode =>
-        node.kind === 'placeholder' && node.name === 'giverole',
+        node.kind === 'placeholder' && node.name === 'addrole',
     )
     .map((node) => (node.args[0] ?? '').trim())
     .filter((arg) => arg !== '')
@@ -412,7 +412,7 @@ export const items: SlashCommand = {
       const giftable = interaction.options.getBoolean('giftable') ?? true;
 
       let useReply = reply?.trim() || null;
-      if (role) useReply = `${useReply ?? ''}{giverole:${role.id}}`;
+      if (role) useReply = `${useReply ?? ''}{addrole:${role.id}}`;
 
       if (useReply) {
         const issues = itemReplyIssues(useReply);
@@ -485,7 +485,7 @@ export const items: SlashCommand = {
       if (reply !== null) useReply = reply.trim() || null;
       if (role) {
         const base = useReply === undefined ? existing.useReply : useReply;
-        useReply = `${base ?? ''}{giverole:${role.id}}`;
+        useReply = `${base ?? ''}{addrole:${role.id}}`;
       }
 
       if (typeof useReply === 'string') {

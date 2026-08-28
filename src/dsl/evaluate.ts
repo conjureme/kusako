@@ -426,8 +426,8 @@ export async function evaluate(
     }
 
     if (
-      node.name === 'giverole' ||
-      node.name === 'takerole' ||
+      node.name === 'addrole' ||
+      node.name === 'removerole' ||
       node.name === 'temprole'
     ) {
       const temp = node.name === 'temprole';
@@ -451,7 +451,7 @@ export async function evaluate(
         }
       }
       actions.roleActions.push({
-        add: node.name !== 'takerole',
+        add: node.name !== 'removerole',
         roleId: role.id,
         userId: targetId,
         ...(temp ? { forSeconds } : {}),

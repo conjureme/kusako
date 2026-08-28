@@ -300,7 +300,7 @@ export async function deliver(
     } catch (err) {
       logger.warn(
         { err, ...options },
-        `${action.add ? 'giverole' : 'takerole'} failed`,
+        `${action.add ? 'addrole' : 'removerole'} failed`,
       );
     }
   }
