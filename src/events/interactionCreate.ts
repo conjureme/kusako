@@ -9,6 +9,8 @@ import {
   isDropdownCustomId,
 } from '../services/buttons/store.js';
 import { fireDropdownSelection } from '../services/buttons/fire.js';
+import { isRoleMenuCustomId } from '../services/roleMenus/store.js';
+import { fireRoleMenu } from '../services/roleMenus/fire.js';
 import {
   isTicketCustomId,
   TICKET_CLOSE_ID,
@@ -57,6 +59,18 @@ export function registerInteractionCreate(client: SakoClient): void {
           { err, id: interaction.customId },
           'button responder failed',
         );
+      }
+      return;
+    }
+
+    if (
+      (interaction.isButton() || interaction.isStringSelectMenu()) &&
+      isRoleMenuCustomId(interaction.customId)
+    ) {
+      try {
+        await fireRoleMenu(interaction);
+      } catch (err) {
+        logger.error({ err, id: interaction.customId }, 'role menu failed');
       }
       return;
     }
