@@ -21,6 +21,7 @@ import { give } from './give.js';
 import { modifyrolebalance } from './modifyrolebalance.js';
 import { schedule } from './schedule.js';
 import { tickets } from './tickets.js';
+import { rolemenu } from './rolemenu.js';
 
 export const commands: SlashCommand[] = [
   ping,
@@ -44,4 +45,5 @@ export const commands: SlashCommand[] = [
   modifyrolebalance,
   schedule,
   tickets,
+  rolemenu,
 ];
