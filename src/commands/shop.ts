@@ -222,7 +222,7 @@ export const shop: SlashCommand = {
       if (!result.ok) {
         let message: string;
         if (result.reason === 'poor') {
-          message = `you need ${currency.emoji} **${result.price.toLocaleString('en-US')} ${currency.name}** for that ! you only have ${result.balance.toLocaleString('en-US')} !`;
+          message = `you need ${currency.emoji} **${result.price.toLocaleString('en-US')}** for that ! you only have ${result.balance.toLocaleString('en-US')} !`;
         } else if (result.reason === 'sold-out') {
           message = "it's sold out :c come back later !";
         } else {
@@ -270,7 +270,7 @@ export const shop: SlashCommand = {
 
       const currency = getCurrency(guildId);
       const details = [
-        `${currency.emoji} ${price.toLocaleString('en-US')} ${currency.name}`,
+        `${currency.emoji} ${price.toLocaleString('en-US')}`,
         stock === null ? 'unlimited stock' : `${stock} in stock`,
         requiredRole ? `needs ${requiredRole.toString()}` : null,
       ].filter((d) => d !== null);

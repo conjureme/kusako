@@ -86,13 +86,13 @@ export const modifybalance: SlashCommand = {
 
     if (!result.ok) {
       await interaction.reply({
-        content: `${user.displayName} only has ${currency.emoji} ${result.balance.toLocaleString('en-US')} ${currency.name}, can't remove that much !`,
+        content: `${user.displayName} only has ${currency.emoji} ${result.balance.toLocaleString('en-US')}, can't remove that much !`,
       });
       return;
     }
 
-    const prettyAmount = `${currency.emoji} **${amount.toLocaleString('en-US')} ${currency.name}**`;
-    const prettyBalance = `${currency.emoji} **${result.balance.toLocaleString('en-US')} ${currency.name}**`;
+    const prettyAmount = `${currency.emoji} **${amount.toLocaleString('en-US')}**`;
+    const prettyBalance = `${currency.emoji} **${result.balance.toLocaleString('en-US')}**`;
 
     const descriptions = {
       add: `added ${prettyAmount} to ${user} !\ntheir balance is now ${prettyBalance} !`,

@@ -6,7 +6,7 @@ export interface Currency {
   emoji: string;
 }
 
-const DEFAULT_CURRENCY: Currency = { name: 'curds', emoji: '🧀' };
+const DEFAULT_CURRENCY: Currency = { name: 'maru', emoji: '🍥' };
 
 export function getCurrency(guildId: string): Currency {
   return {

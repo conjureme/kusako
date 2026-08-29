@@ -182,7 +182,7 @@ export const guards = new Map<string, Guard>([
       const got = subject.isSelf ? "you've only got" : "they've only got";
       return {
         ok: false,
-        message: `${needs} ${currency.emoji} **${amount.toLocaleString('en-US')} ${currency.name}** for that,, ${got} ${balance.toLocaleString('en-US')} !`,
+        message: `${needs} ${currency.emoji} **${amount.toLocaleString('en-US')}** for that,, ${got} ${balance.toLocaleString('en-US')} !`,
         data: {
           'requirebal.needed': amount.toLocaleString('en-US'),
           'requirebal.have': balance.toLocaleString('en-US'),

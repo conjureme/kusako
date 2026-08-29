@@ -72,7 +72,7 @@ export const settings: SlashCommand = {
             .addStringOption((o) =>
               o
                 .setName('name')
-                .setDescription('what the currency is called, e.g. curds')
+                .setDescription('what the currency is called, e.g. maru')
                 .setMaxLength(32)
                 .setRequired(true),
             )
@@ -247,7 +247,7 @@ export const settings: SlashCommand = {
       const embed = serverEmbed(interaction.guild)
         .setTitle('✦ head pats updated !')
         .setDescription(
-          `reward: ${currency.emoji} **${now.minReward.toLocaleString('en-US')}-${now.maxReward.toLocaleString('en-US')} ${currency.name}**, cooldown: **${formatDuration(now.cooldownSeconds)}**, pats are **${state}** !`,
+          `reward: ${currency.emoji} **${now.minReward.toLocaleString('en-US')}-${now.maxReward.toLocaleString('en-US')}**, cooldown: **${formatDuration(now.cooldownSeconds)}**, pats are **${state}** !`,
         );
 
       await interaction.reply({ embeds: [embed] });

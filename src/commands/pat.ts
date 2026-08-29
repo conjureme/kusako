@@ -62,7 +62,7 @@ export const pat: SlashCommand = {
     setGameCooldown(guildId, 'pat', userId, settings.cooldownSeconds);
 
     const currency = getCurrency(guildId);
-    const pay = `${currency.emoji} **${reward.toLocaleString('en-US')} ${currency.name}**`;
+    const pay = `${currency.emoji} **${reward.toLocaleString('en-US')}**`;
     const line = LINES[Math.floor(Math.random() * LINES.length)]!.replaceAll(
       '{{pay}}',
       pay,
