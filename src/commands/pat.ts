@@ -45,11 +45,9 @@ export const pat: SlashCommand = {
 
     const remaining = getGameCooldownRemaining(guildId, 'pat', userId);
     if (remaining > 0) {
-      const embed = userEmbed(interaction.user)
-        .setTitle('✧･ﾟ head pats !')
-        .setDescription(
-          `STOPPP !! i don't want any right now... come back in **${formatDuration(remaining)}**`,
-        );
+      const embed = userEmbed(interaction.user).setDescription(
+        `STOPPP !! i don't want any right now... come back in **${formatDuration(remaining)}**`,
+      );
       await interaction.reply({ embeds: [embed] });
       return;
     }
@@ -69,10 +67,9 @@ export const pat: SlashCommand = {
     );
 
     const embed = userEmbed(interaction.user)
-      .setTitle('✧･ﾟ head pats !')
       .setDescription(line)
       .setFooter({
-        text: `you can pat again in ${formatDuration(settings.cooldownSeconds)} !`,
+        text: `you can pat again in ${formatDuration(settings.cooldownSeconds)}`,
       });
 
     await interaction.reply({ embeds: [embed] });
