@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS role_menus (
   mode TEXT NOT NULL DEFAULT 'multi',
   color TEXT,
   roles TEXT NOT NULL DEFAULT '[]',
+  show_clear INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   PRIMARY KEY (guild_id, name_key)
@@ -278,6 +279,27 @@ CREATE INDEX IF NOT EXISTS idx_global_transactions_user
 
 let instance: Database.Database | null = null;
 
+function hasColumn(
+  database: Database.Database,
+  table: string,
+  column: string,
+): boolean {
+  const rows = database.prepare(`PRAGMA table_info(${table})`).all() as Array<{
+    name: string;
+  }>;
+
+  return rows.some((row) => row.name === column);
+}
+
+function migrate(database: Database.Database): void {
+  if (!hasColumn(database, 'role_menus', 'show_clear')) {
+    database.exec(
+      'ALTER TABLE role_menus ADD COLUMN show_clear INTEGER NOT NULL DEFAULT 1',
+    );
+    logger.info('migrated: role_menus.show_clear');
+  }
+}
+
 export function db(): Database.Database {
   if (instance) return instance;
 
@@ -286,6 +308,7 @@ export function db(): Database.Database {
   instance.pragma('journal_mode = WAL');
   instance.pragma('foreign_keys = ON');
   instance.exec(SCHEMA);
+  migrate(instance);
 
   logger.debug({ path: DB_PATH }, 'sqlite opened');
   return instance;

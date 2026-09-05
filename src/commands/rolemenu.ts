@@ -77,6 +77,12 @@ function settingOptions(
         .setDescription('button color, ignored by dropdowns')
         .addChoices(...COLOR_CHOICES)
         .setRequired(false),
+    )
+    .addBooleanOption((o) =>
+      o
+        .setName('clear')
+        .setDescription('offer a clear roles pick, ignored by buttons')
+        .setRequired(false),
     );
 }
 
@@ -94,6 +100,9 @@ function readSettings(interaction: ChatInputCommandInteraction): RoleMenuInput {
 
   const color = interaction.options.getString('color');
   if (color !== null) patch.color = color;
+
+  const clear = interaction.options.getBoolean('clear');
+  if (clear !== null) patch.showClear = clear;
 
   return patch;
 }
@@ -148,6 +157,9 @@ function menuEmbed(guild: Guild, header: string, menu: RoleMenu) {
   ];
 
   if (menu.placeholder) lines.push(`-# ✧ says "${menu.placeholder}"`);
+  if (menu.style === 'dropdown' && !menu.showClear) {
+    lines.push('-# ✧ no clear roles pick on this one');
+  }
   if (missing.length > 0) {
     lines.push(
       `-# ✧ **${missing.length}** of these no longer exist and are skipped when it renders`,

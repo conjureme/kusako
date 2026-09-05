@@ -32,6 +32,7 @@ import {
   getRoleMenu,
   roleMenuCustomId,
   roleMenuButtonId,
+  CLEAR_PICK,
   type RoleMenu,
 } from '../services/roleMenus/store.js';
 import { logger } from '../logger.js';
@@ -140,6 +141,16 @@ function roleMenuRows(
           return option;
         }),
       );
+
+    if (menu.showClear) {
+      select.addOptions(
+        new StringSelectMenuOptionBuilder()
+          .setValue(CLEAR_PICK)
+          .setLabel('clear roles')
+          .setDescription('takes off everything from this menu')
+          .setEmoji('❌'),
+      );
+    }
 
     if (menu.placeholder) select.setPlaceholder(menu.placeholder.slice(0, 150));
 

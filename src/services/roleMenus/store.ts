@@ -1,6 +1,6 @@
 import { db } from '../../db.js';
 
-export const MAX_MENU_ROLES = 25;
+export const MAX_MENU_ROLES = 24;
 export const BUTTONS_PER_ROW = 5;
 
 export const MENU_STYLES = ['dropdown', 'buttons'] as const;
@@ -23,6 +23,7 @@ export interface RoleMenu {
   style: MenuStyle;
   mode: MenuMode;
   color: string | null;
+  showClear: boolean;
   roles: RoleMenuEntry[];
   createdAt: number;
   updatedAt: number;
@@ -33,6 +34,7 @@ export interface RoleMenuInput {
   style?: MenuStyle;
   mode?: MenuMode;
   color?: string | null;
+  showClear?: boolean;
   roles?: RoleMenuEntry[];
 }
 
@@ -49,6 +51,7 @@ interface Row {
   style: string;
   mode: string;
   color: string | null;
+  show_clear: number;
   roles: string;
   created_at: number;
   updated_at: number;
@@ -87,6 +90,7 @@ function toModel(row: Row): RoleMenu {
     style: isMenuStyle(row.style) ? row.style : 'dropdown',
     mode: isMenuMode(row.mode) ? row.mode : 'multi',
     color: row.color,
+    showClear: row.show_clear !== 0,
     roles: parseEntries(row.roles),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -106,6 +110,8 @@ export const MAX_MENU_NAME = 32;
 export function roleMenuKey(name: string): string {
   return name.trim().toLowerCase();
 }
+
+export const CLEAR_PICK = 'clear';
 
 const MENU_PREFIX = 'rm:';
 const MENU_BUTTON_PREFIX = 'rmb:';
@@ -171,6 +177,16 @@ export function resolvePick(
   memberRoleIds: Iterable<string>,
 ): RoleChange {
   const held = new Set(memberRoleIds);
+
+  if (roleId === CLEAR_PICK) {
+    return {
+      add: [],
+      remove: menu.roles
+        .map((entry) => entry.roleId)
+        .filter((id) => held.has(id)),
+    };
+  }
+
   const inMenu = menu.roles.some((entry) => entry.roleId === roleId);
   if (!inMenu) return { add: [], remove: [] };
 
@@ -214,9 +230,9 @@ export function createRoleMenu(
   const result = db()
     .prepare(
       `INSERT OR IGNORE INTO role_menus
-        (guild_id, name, name_key, placeholder, style, mode, color, roles,
-         created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (guild_id, name, name_key, placeholder, style, mode, color, show_clear,
+         roles, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       guildId,
@@ -226,6 +242,7 @@ export function createRoleMenu(
       input.style ?? 'dropdown',
       input.mode ?? 'multi',
       input.color ?? null,
+      (input.showClear ?? true) ? 1 : 0,
       JSON.stringify(dedupeEntries(input.roles ?? [])),
       now,
       now,
@@ -245,8 +262,8 @@ export function updateRoleMenu(
   const result = db()
     .prepare(
       `UPDATE role_menus
-       SET placeholder = ?, style = ?, mode = ?, color = ?, roles = ?,
-           updated_at = ?
+       SET placeholder = ?, style = ?, mode = ?, color = ?, show_clear = ?,
+           roles = ?, updated_at = ?
        WHERE guild_id = ? AND name_key = ?`,
     )
     .run(
@@ -254,6 +271,7 @@ export function updateRoleMenu(
       patch.style ?? current.style,
       patch.mode ?? current.mode,
       patch.color === undefined ? current.color : patch.color,
+      (patch.showClear ?? current.showClear) ? 1 : 0,
       JSON.stringify(dedupeEntries(patch.roles ?? current.roles)),
       Date.now(),
       guildId,
