@@ -11,11 +11,82 @@
   <a href="./LICENSE"><img src="https://img.shields.io/github/license/stinkmage/kusako?style=flat&labelColor=8f79c9&color=c9b8ec" alt="license" /></a>
 </p>
 
-kusako is a discord bot for servers that want an economy, leveling, items, a shop, and autoresponders that fire when people say things, join, level up, or click a button. she's written in typescript on [discord.js](https://discord.js.org/) and keeps everything in one sqlite file, so you don't gotta host anything besides her !
+kusako is chunky discord bot full of features fit for your community servers! she can handle economy, level roles, custom usable items, server shops, and has a super extensible autoresponder system. sako is written in typescript on [discord.js](https://discord.js.org/) and keeps everything in one sqlite file, so you don't gotta host anything besides her !
 
-sako's replies also DO things. you can have an autoresponder that pays someone on a level up, takes an item away, or gives roles when people join or press a button.
+## overview of sako's features
 
-## a few examples
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### autoresponders !
+
+- matchmodes: exact, starts with, ends with, or includes for triggers
+- message args: words around a trigger become variables
+- guards, effects, and generators: restrict autoresponders, pay out currency or roles, and handle randomness
+- reply shapes: react, DM, send a reply to a different channel, or split it into multiple messages
+
+### economy !
+
+- currency: per-server name & emoji
+- items: per-server catalog, each with an optional reply powered by sako's DSL when using an item
+- inventories: server members hold items and gift them to one another
+- shop: listings with a price, optional stock, and role requirements
+- global currency: a separate user-scoped balance used globally across servers
+
+### leveling !
+
+- XP per message: 1-10 per message, once per minute
+- level up replies: optional per level, powered by the DSL
+
+### events !
+
+- join and leave: sends a reply in a channel, written with same tags
+- boost: fires when someone boosts
+- fully templated: an event reply can give roles, attach a saved embed, or react to itself
+
+### scheduling !
+
+- posts: daily, weekly, every N minutes, or once at a time
+- timezones: can be set per server
+- temp roles: `{temprole}` gives a role and takes it later
+- self-deleting replies: `{delete_reply}` deletes sako's reply after a few seconds
+
+</td>
+
+<td width="50%" valign="top">
+
+### tickets !
+
+- ticket channels: customizable panel of buttons, and a click opens a private channel
+- ticket types: create as many ticket types as you want, each with its own visible roles, greeting, and cooldowns
+- close and reopen: closing locks the channel and automatically archives it, staff or opener can reopen
+
+### embeds !
+
+- saved embeds: create one, name it, then send it using `{embed:name}` in a reply
+- live builder: buttons and modals in discord, with a live preview
+- JSON import: paste from any embed builder site
+
+### minigames & gambling !
+
+- `/pat`: give sako headpats for server currency tips
+- more coming: coinflip, roulette, blackjack, ride the bus
+- fully configurable: disable gambling games, configure min & max bets, and change cooldowns
+
+### in the works !
+
+- giveaways
+- stickies
+- auto-threads
+- `/leaderboard`
+- birthdays
+
+</td>
+</tr>
+</table>
+
+## a few DSL examples
 
 a timed autoresponder reminder for a discord bot minigame. this adds a reaction to the triggering message; then, 480 seconds later, sends the reply:
 
@@ -29,7 +100,7 @@ a join event, written just like an autoresponder. fires when someone joins your 
 {addrole:1346588187472039956}{addrole:1346588712091521145}{addrole:1346588148519534683}{addrole:1385742887328677969}{embed:welcome1}{reactreply:<a:wavey:1541205650594468050>}
 ```
 
-a boost event:
+a boost event, sends an embed and gives the booster 5,000 currency:
 
 ```
 {modifybal:5000}{embed:boosted}
@@ -41,16 +112,16 @@ a `.crime` currency command. this has a 1 hour cooldown, gives either a large am
 {server.currencyemoji as c}{cooldown:3600}{error: can't commit another crime yet! wait for [cooldown.remaining]}{range as jackpot: 400-550}{range as gain: 50-200}{choice as crime: fed kusako beyond salmon instead of a real fish | called kusako a giga dent | gifted sako a chicken biryani scented candle | mega lowballed a sofi bot card }{weightedchoice as roll: 10 big | 40 win | 50 caught}{lockedchoice as del: roll | [jackpot] | [gain] | 0}{lockedchoice as outcome: roll | somehow made bank off it,,, [c] **[jackpot]** | got away with it,, [c] **[gain]** | got caught instantly,,, nothing for you}{modifybal:[del]}you [crime] and [outcome]
 ```
 
-## note on autoresponders and "replies"
+## autoresponders and "replies"
 
-a reply is plain text with tags in braces. there are four types of tags:
+a reply is just plain text that can use tags in braces. there are four types of tags that can be used across kusako's features:
 
 - **placeholders** fill in: `{user}`, `{server.membercount}`, `{user.balance}`
 - **generators** generate something and remember it: `{range as prize: 30-60}`, then `[prize]` anywhere after
 - **guards** decide whether it fires at all: `{requirebal:100}`, `{requirerole:admin}`, `{cooldown:3600}`
 - **effects** change things: `{modifybal:-100}`, `{addrole:verified}`, `{temprole:muted|600}`
 
-small note: if any guard fails, nothing happens and she'll say why. if they all pass, every effect commits together. there is no half-fired reply.
+if any guard fails, nothing happens and she'll say why. if they all pass, every effect commits together!
 
 any typos in placeholders will render as raw text, like `{addrol:}`, instead of disappearing. kusako will also reject things that can't work upon saving instead of misfiring !
 
